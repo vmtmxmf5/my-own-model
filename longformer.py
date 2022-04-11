@@ -97,7 +97,8 @@ def evaluate(model, dataloader, criterion, config):
 
             outputs = model(inputs)
             loss = criterion(outputs, labels)
-            acc = torch.sum((outputs == labels) / outputs.shape[0], dim=0).item()
+            out_idx = torch.max(outputs, 1)[1]
+            acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
 
             cum_loss += loss.item()
             cum_acc += acc
