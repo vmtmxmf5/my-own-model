@@ -57,33 +57,34 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
     total_num = len(dataloader)
     if config.dataset == 'imdb':
         for inputs, labels, lengths in dataloader:
-            inputs, labels, lengths = inputs.to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
-            optimizer.zero_grad()
+            if inputs.shape[1] < 513:
+                inputs, labels, lengths = inputs.to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
+                optimizer.zero_grad()
 
-            outputs = model(inputs) # (B, 2)
-            loss = criterion(outputs, labels)
-            out_idx = torch.max(outputs, 1)[1]
-            acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
-            
-            loss.backward()
-            optimizer.step()
-            lr_scheduler.step()
+                outputs = model(inputs) # (B, 2)
+                loss = criterion(outputs, labels)
+                out_idx = torch.max(outputs, 1)[1]
+                acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
 
-            cum_loss += loss.item()
-            cum_acc += acc
+                loss.backward()
+                optimizer.step()
+                lr_scheduler.step()
 
-            batch += 1
-            if batch % print_batch == 0:
-                current = time.time()
-                elapsed = current - begin
-                epoch_elapsed = (current - epoch_begin) / 60.0
-                train_elapsed = (current - train_begin) / 3600.0
+                cum_loss += loss.item()
+                cum_acc += acc
 
-                print('epoch: {:4d}, batch: {:5d}/{:5d}, \nloss: {:.8f}, elapsed: {:6.2f}s {:6.2f}m {:6.2f}h'.format(
-                        epoch, batch, total_num,
-                        cum_loss / batch, # moving average loss
-                        elapsed, epoch_elapsed, train_elapsed))
-                begin = time.time()
+                batch += 1
+                if batch % print_batch == 0:
+                    current = time.time()
+                    elapsed = current - begin
+                    epoch_elapsed = (current - epoch_begin) / 60.0
+                    train_elapsed = (current - train_begin) / 3600.0
+
+                    print('epoch: {:4d}, batch: {:5d}/{:5d}, \nloss: {:.8f}, elapsed: {:6.2f}s {:6.2f}m {:6.2f}h'.format(
+                            epoch, batch, total_num,
+                            cum_loss / batch, # moving average loss
+                            elapsed, epoch_elapsed, train_elapsed))
+                    begin = time.time()
     return cum_loss / total_num, cum_acc
 
 
@@ -93,15 +94,16 @@ def evaluate(model, dataloader, criterion, config):
     cum_loss, cum_acc = 0, 0
     with torch.no_grad():
         for inputs, labels, lengths in dataloader:
-            inputs, labels, lengths = inputs.to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
+            if inputs.shape[1] < 513:
+                inputs, labels, lengths = inputs.to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
 
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            out_idx = torch.max(outputs, 1)[1]
-            acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                out_idx = torch.max(outputs, 1)[1]
+                acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
 
-            cum_loss += loss.item()
-            cum_acc += acc
+                cum_loss += loss.item()
+                cum_acc += acc
     return cum_loss / len(dataloader), cum_acc
 
 
@@ -187,11 +189,13 @@ if __name__=='__main__':
                                 num_training_steps=num_training_steps)
     
     train_begin = time.time()
+    best_valid_loss = 100.0
     for epoch in range(config.epochs):
         train_loss, train_acc = train(model, train_dl, criterion, optimizer, lr_scheduler, config, train_begin, epoch)
         wandb.log({'train_loss':train_loss, 'train_acc':train_acc}) #TODO
 
         valid_loss, valid_acc = evaluate(model, valid_dl, criterion, config)
         wandb.log({'valid_loss':valid_loss, 'valid_acc':valid_acc}) #TODO
-
-        save(os.path.join('checkpoint', f'model_{epoch+1:03d}.pt'), model, optimizer)
+        if valid_loss < best_valid_loss:
+            save(os.path.join('checkpoint', f'model_{epoch+1:03d}.pt'), model, optimizer)
+            best_valid_loss = valid_loss
