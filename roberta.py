@@ -6,7 +6,7 @@ from modules import PositionwiseFeedForward
 from modules import ActivationFunction
 from modules import sequence_mask
 from modules import embeddings
-from transformers import LongformerModel, RobertaTokenizer
+from transformers import LongformerModel, RobertaTokenizer, RobertaModel
 
 
 class EncoderBase(nn.Module):
@@ -196,12 +196,14 @@ class LongformerHead(nn.Module):
     """Head for sentence-level classification tasks."""
     def __init__(self, config):
         super().__init__()
-        self.longformer = LongformerModel.from_pretrained('allenai/longformer-large-4096')
-        self.tokenzier = RobertaTokenizer.from_pretrained('roberta-large')
+        self.longformer = RobertaModel.from_pretrained('roberta-large')
+#         self.longformer = LongformerModel.from_pretrained('allenai/longformer-large-4096')
+#         self.tokenzier = RobertaTokenizer.from_pretrained('roberta-large')
         self.out_proj = nn.Linear(config.d_model, config.num_labels)
 
     def forward(self, inputs):
-        inputs = self.tokenzier(inputs)
+#         inputs = self.tokenzier(inputs)
+        inputs = {'input_ids':inputs}
         outputs = self.longformer(inputs)
         x = outputs.last_hidden_state
         x = self.out_proj(x)
