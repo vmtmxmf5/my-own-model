@@ -205,7 +205,7 @@ class LongformerHead(nn.Module):
 #         inputs = self.tokenzier(inputs)
 #         inputs = {'input_ids':inputs}
         outputs = self.longformer(inputs)
-        x = outputs.last_hidden_state
+        x = outputs.pooler_output
         x = self.out_proj(x)
         return x        
 
