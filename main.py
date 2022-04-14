@@ -61,6 +61,7 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
 
             outputs = model(inputs, lengths) # (B, 2)
             loss = criterion(outputs, labels)
+            out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
             out_idx = torch.max(outputs, 1)[1]
             acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
             
@@ -96,6 +97,7 @@ def evaluate(model, dataloader, criterion, config):
 
             outputs = model(inputs, lengths)
             loss = criterion(outputs, labels)
+            out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
             out_idx = torch.max(outputs, 1)[1]
             acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
 
