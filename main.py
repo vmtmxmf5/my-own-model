@@ -32,20 +32,26 @@ def collate_fn(batch):
     # max_len = len(max(lines))
     max_len = max(lengths)
 
-    ids_res = []
-    for line, lens in zip(lines, lengths):
+    ids_res_256, ids_res_512, over_512_len = [], [], []
+    for i, line, lens in enumerate(zip(lines, lengths)):
         len_ids = max_len - lens
         if len_ids != 0:
             padding = torch.ones((1, len_ids), dtype=torch.long)
             ids_tensor = torch.cat([torch.LongTensor([line]), padding], dim=1)
         else:
             ids_tensor = torch.LongTensor([line])
-        ids_res.append(ids_tensor)
+        if lens < 256:
+            ids_res_256.append(ids_tensor)
+        else:
+            ids_res_512.append(ids_tensor)
+            over_512_len.append(i)
         # label_res.append(torch.LongTensor([label]))
-    ids_batch = torch.cat(ids_res, dim=0)
+    ids_batch_256 = torch.cat(ids_res_256, dim=0)
+    if ids_res_512 != []:
+        ids_batch_512 = torch.cat(ids_res_512, dim=0)
     label_batch = torch.LongTensor(labels).reshape(-1)
     len_batch = torch.LongTensor(lengths)
-    return ids_batch, label_batch, len_batch
+    return {'256':ids_batch_256, '512':ids_batch_512}, label_batch, len_batch, over_512_len
      
 
 def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_begin, epoch):
@@ -55,10 +61,25 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
     batch, print_batch = 0, 100
     total_num = len(dataloader)
     if config.dataset == 'imdb':
-        for inputs, labels, lengths in dataloader:
-            inputs, labels, lengths = inputs.to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
+        for inputs, labels, lengths, over_idx in dataloader:
+            inputs, labels, lengths = inputs['256'].to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
+            
+            if inputs['512'].size(0) != 0:
+                long_inputs = inputs['512'].to(config.device)
+                optimizer.zero_grad()
+                outputs = model(inputs, lengths[over_idx]) # (B, 2)
+                loss = criterion(outputs, labels)
+                out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
+                out_idx = torch.max(outputs, 1)[1]
+                acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
+                loss.backward()
+                optimizer.step()
+                lr_scheduler.step()
             optimizer.zero_grad()
 
+            ## 512 token idx 선별 후 0으로 만든 뒤 drop
+            lengths[over_idx] = 0
+            lengths = lengths[lengths != 0]
             outputs = model(inputs, lengths) # (B, 2)
             loss = criterion(outputs, labels)
             out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
@@ -92,9 +113,24 @@ def evaluate(model, dataloader, criterion, config):
     
     cum_loss, cum_acc = 0, 0
     with torch.no_grad():
-        for inputs, labels, lengths in dataloader:
-            inputs, labels, lengths = inputs.to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
-
+        for inputs, labels, lengths, over_idx in dataloader:
+            inputs, labels, lengths = inputs['256'].to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
+            
+            if inputs['512'].size(0) != 0:
+                long_inputs = inputs['512'].to(config.device)
+                optimizer.zero_grad()
+                outputs = model(inputs, lengths[over_idx]) # (B, 2)
+                loss = criterion(outputs, labels)
+                out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
+                out_idx = torch.max(outputs, 1)[1]
+                acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
+                loss.backward()
+                optimizer.step()
+                lr_scheduler.step()
+            optimizer.zero_grad()
+            ## 512 token idx 선별 후 0으로 만든 뒤 drop
+            lengths[over_idx] = 0
+            lengths = lengths[lengths != 0]
             outputs = model(inputs, lengths)
             loss = criterion(outputs, labels)
             out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
@@ -192,11 +228,13 @@ if __name__=='__main__':
                                 num_training_steps=num_training_steps)
     
     train_begin = time.time()
+    best_valid_loss = 100
     for epoch in range(config.epochs):
         train_loss, train_acc = train(model, train_dl, criterion, optimizer, lr_scheduler, config, train_begin, epoch)
         wandb.log({'train_loss':train_loss, 'train_acc':train_acc}) #TODO
 
         valid_loss, valid_acc = evaluate(model, valid_dl, criterion, config)
         wandb.log({'valid_loss':valid_loss, 'valid_acc':valid_acc}) #TODO
-
-        save(os.path.join('checkpoint', f'model_{epoch+1:03d}.pt'), model, optimizer)
+        if valid_loss < best_valid_loss:
+            save(os.path.join('checkpoint', f'model_{epoch+1:03d}.pt'), model, optimizer)
+            best_valid_loss = valid_loss
