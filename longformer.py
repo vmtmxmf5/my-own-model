@@ -91,13 +91,13 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
                             cum_loss / batch, # moving average loss
                             elapsed, epoch_elapsed, train_elapsed))
                     begin = time.time()
-    return cum_loss / total_num, cum_acc
+    return cum_loss / total_num, cum_acc / batch
 
 
 def evaluate(model, dataloader, criterion, config):
     model.eval() # Dropout 종료
     
-    cum_loss, cum_acc = 0, 0
+    cum_loss, cum_acc, batch = 0, 0, 0
     with torch.no_grad():
         for inputs, labels, lengths in dataloader:
             if inputs['input_ids'].shape[1] < 513:
@@ -112,7 +112,8 @@ def evaluate(model, dataloader, criterion, config):
 
                 cum_loss += loss.item()
                 cum_acc += acc
-    return cum_loss / len(dataloader), cum_acc
+                batch += 1
+    return cum_loss / len(dataloader), cum_acc / batch
 
 
 def save(filename, model, optimizer):
