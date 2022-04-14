@@ -204,7 +204,7 @@ class LongformerHead(nn.Module):
     def forward(self, inputs):
 #         inputs = self.tokenzier(inputs)
 #         inputs = {'input_ids':inputs}
-        outputs = self.longformer(inputs)
+        outputs = self.longformer(**inputs)
         x = outputs.pooler_output
         x = self.out_proj(x)
         return x        
