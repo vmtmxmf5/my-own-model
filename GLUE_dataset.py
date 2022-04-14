@@ -62,9 +62,17 @@ for a, b, c in zip(glue['train'], glue['validation'], glue['test']):
                         len(a_tokens['question']), len(b_tokens['question']), len(c_tokens['question']))
     if max_len < max_num:
         max_len = max_num
-    tr.append(dict(a_tokens))
-    val.append(dict(b_tokens))
-    test.append(dict(c_tokens))
+
+    if len(a_tokens['input_ids']) < 512:
+        if len(a_tokens['question']) < 512:
+            tr.append(dict(a_tokens))
+    if len(b_tokens['input_ids']) < 512:
+        if len(b_tokens['question']) < 512:
+            val.append(dict(b_tokens))
+    if len(c_tokens['input_ids']) < 512:
+        if len(c_tokens['question']) < 512:
+            test.append(dict(c_tokens))
+
 print(f'{qnli} max token len: ', max_len)
 with open(f'{qnli}_train.json', 'w', encoding='utf-8') as f:
     f.write(json.dumps(tr, ensure_ascii=False))
@@ -97,9 +105,15 @@ for a, b, c in zip(glue['train'], glue['validation'], glue['test']):
                      len(a_tokens['question']), len(b_tokens['question']), len(c_tokens['question']))
     if max_len < max_num:
         max_len = max_num
-    tr.append(dict(a_tokens))
-    val.append(dict(b_tokens))
-    test.append(dict(c_tokens))
+    if len(a_tokens['input_ids']) < 512:
+        if len(a_tokens['question']) < 512:
+            tr.append(dict(a_tokens))
+    if len(b_tokens['input_ids']) < 512:
+        if len(b_tokens['question']) < 512:
+            val.append(dict(b_tokens))
+    if len(c_tokens['input_ids']) < 512:
+        if len(c_tokens['question']) < 512:
+            test.append(dict(c_tokens))
 print(f'{qqp} max token len: ', max_len)
 with open(f'{qqp}_train.json', 'w', encoding='utf-8') as f:
     f.write(json.dumps(tr, ensure_ascii=False))
@@ -120,8 +134,10 @@ for a, b in zip(imdb['train'], imdb['test']):
         max_len = max_num
     a_tokens['label'] = [a['label']]
     b_tokens['label'] = [b['label']]
-    tr.append(dict(a_tokens))
-    val.append(dict(b_tokens))
+    if len(a_tokens['input_ids']) < 512:
+        tr.append(dict(a_tokens))
+    if len(b_tokens['input_ids']) < 512:
+        val.append(dict(b_tokens))
 print('imdb max token len: ', max_len)
 
 with open('imdb_train.json', 'w', encoding='utf-8') as f:
