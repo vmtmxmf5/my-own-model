@@ -25,28 +25,32 @@ class KCCdataset(Dataset):
         line = self.train[index]
         label = line['label']
         length = len(line['input_ids'])
-        return line['input_ids'], label, length
+        return line['input_ids'], label, length, line['attention_mask']
 
 
 def collate_fn(batch):
-    lines, labels, lengths = zip(*batch)
+    lines, labels, lengths, attn = zip(*batch)
     # max_len = len(max(lines))
     max_len = max(lengths)
 
-    ids_res = []
-    for line, lens in zip(lines, lengths):
+    ids_res, attn_res = [], []
+    for line, att, lens in zip(lines, attn, lengths):
         len_ids = max_len - lens
         if len_ids != 0:
             padding = torch.ones((1, len_ids), dtype=torch.long)
             ids_tensor = torch.cat([torch.LongTensor([line]), padding], dim=1)
+            att_tensor = torch.cat([torch.LongTensor([att]), padding], dim=1)
         else:
             ids_tensor = torch.LongTensor([line])
+            att_tensor = torch.LongTensor([att])
         ids_res.append(ids_tensor)
+        attn_res.append(att_tensor)
         # label_res.append(torch.LongTensor([label]))
     ids_batch = torch.cat(ids_res, dim=0)
+    attn_batch = torch.cat(attn_res, dim=0)
     label_batch = torch.LongTensor(labels).reshape(-1)
     len_batch = torch.LongTensor(lengths)
-    return ids_batch, label_batch, len_batch
+    return {'input_ids':ids_batch, 'attention_mask':attn_batch}, label_batch, len_batch
      
 
 def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_begin, epoch):
@@ -57,8 +61,9 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
     total_num = len(dataloader)
     if config.dataset == 'imdb':
         for inputs, labels, lengths in dataloader:
-            if inputs.shape[1] < 513:
-                inputs, labels, lengths = inputs.to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
+            if inputs['input_ids'].shape[1] < 513:
+                inputs = {k:v.to(config.device) for k, v in inputs.items()}
+                labels, lengths = labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
                 optimizer.zero_grad()
 
                 outputs = model(inputs) # (B, 2)
@@ -94,8 +99,9 @@ def evaluate(model, dataloader, criterion, config):
     cum_loss, cum_acc = 0, 0
     with torch.no_grad():
         for inputs, labels, lengths in dataloader:
-            if inputs.shape[1] < 513:
-                inputs, labels, lengths = inputs.to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
+            if inputs['input_ids'].shape[1] < 513:
+                inputs = {k:v.to(config.device) for k, v in inputs.items()}
+                labels, lengths = labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
 
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
