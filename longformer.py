@@ -157,7 +157,7 @@ if __name__=='__main__':
     ### dataset settings
     if config.dataset == 'imdb':
         paths = ['imdb_train.json', 'imdb_valid.json']
-    elif config.dataset == 'enwik8' or 'text8':
+    elif config.dataset == ('enwik8' or 'text8'):
         ## bpc mode 
         ## dataset 수정 필요!
         paths = [config.dataset + '_' + name + '.txt' for name in ['train', 'valid', 'test']]
