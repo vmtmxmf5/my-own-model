@@ -33,7 +33,7 @@ def collate_fn(batch):
     max_len = max(lengths)
 
     ids_res_256, ids_res_512, over_512_len = [], [], []
-    for i, line, lens in enumerate(zip(lines, lengths)):
+    for i, (line, lens) in enumerate(zip(lines, lengths)):
         len_ids = max_len - lens
         if len_ids != 0:
             padding = torch.ones((1, len_ids), dtype=torch.long)
