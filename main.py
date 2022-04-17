@@ -61,13 +61,13 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
     batch, print_batch = 0, 100
     total_num = len(dataloader)
     if config.dataset == 'imdb':
-        for inputs, labels, lengths, over_idx in dataloader:
-            inputs, labels, lengths = inputs['256'].to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
+        for inputs_dict, labels, lengths, over_idx in dataloader:
+            inputs, labels, lengths = inputs_dict['256'].to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
             
-            if inputs['512'].size(0) != 0:
-                long_inputs = inputs['512'].to(config.device)
+            if inputs_dict['512'].size(0) != 0:
+                long_inputs = inputs_dict['512'].to(config.device)
                 optimizer.zero_grad()
-                outputs = model(inputs, lengths[over_idx]) # (B, 2)
+                outputs = model(long_inputs, lengths[over_idx]) # (B, 2)
                 loss = criterion(outputs, labels)
                 out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
                 out_idx = torch.max(outputs, 1)[1]
@@ -113,13 +113,13 @@ def evaluate(model, dataloader, criterion, config):
     
     cum_loss, cum_acc, batch = 0, 0, 0 
     with torch.no_grad():
-        for inputs, labels, lengths, over_idx in dataloader:
-            inputs, labels, lengths = inputs['256'].to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
+        for inputs_dict, labels, lengths, over_idx in dataloader:
+            inputs, labels, lengths = inputs_dict['256'].to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
             
-            if inputs['512'].size(0) != 0:
-                long_inputs = inputs['512'].to(config.device)
+            if inputs_dict['512'].size(0) != 0:
+                long_inputs = inputs_dict['512'].to(config.device)
                 optimizer.zero_grad()
-                outputs = model(inputs, lengths[over_idx]) # (B, 2)
+                outputs = model(long_inputs, lengths[over_idx]) # (B, 2)
                 loss = criterion(outputs, labels)
                 out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
                 out_idx = torch.max(outputs, 1)[1]
