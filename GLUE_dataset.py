@@ -54,7 +54,7 @@ max_len = 0
 glue = load_dataset('glue', qnli)
 for a in glue['train']:
     a_tokens = tokenizer(a['question'] + '</s>' + a['sentence'])
-    a_q = tokenizer(a['question'])
+    # a_q = tokenizer(a['question'])
     a_tokens['label'] = [a['label']]
     # a_tokens['question'] = a_q['input_ids']
     max_num = len(a_tokens['input_ids'])
