@@ -42,7 +42,7 @@ def collate_fn(batch):
             ids_tensor = torch.LongTensor([line])
         if lens < 256:
             ids_res_256.append(ids_tensor)
-        else:
+        if 256 < lens < 513: #TODO
             ids_res_512.append(ids_tensor)
             over_512_len.append(i)
         # label_res.append(torch.LongTensor([label]))
