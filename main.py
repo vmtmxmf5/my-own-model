@@ -68,7 +68,7 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
                 long_inputs = inputs_dict['512'].to(config.device)
                 optimizer.zero_grad()
                 outputs = model(long_inputs, lengths[over_idx]) # (B, 2)
-                loss = criterion(outputs, labels)
+                loss = criterion(outputs, labels[over_idx])
                 out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
                 out_idx = torch.max(outputs, 1)[1]
                 acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
@@ -80,8 +80,8 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
             ## 512 token idx 선별 후 0으로 만든 뒤 drop
             lengths[over_idx] = 0
             lengths = lengths[lengths != 0]
-            outputs = model(inputs, lengths) # (B, 2)
-            loss = criterion(outputs, labels)
+            outputs = model(inputs, lengths[~over_idx]) # (B, 2)
+            loss = criterion(outputs, labels[~over_idx])
             out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
             out_idx = torch.max(outputs, 1)[1]
             acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
@@ -120,7 +120,7 @@ def evaluate(model, dataloader, criterion, config):
                 long_inputs = inputs_dict['512'].to(config.device)
                 optimizer.zero_grad()
                 outputs = model(long_inputs, lengths[over_idx]) # (B, 2)
-                loss = criterion(outputs, labels)
+                loss = criterion(outputs, labels[over_idx])
                 out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
                 out_idx = torch.max(outputs, 1)[1]
                 acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
@@ -131,8 +131,8 @@ def evaluate(model, dataloader, criterion, config):
             ## 512 token idx 선별 후 0으로 만든 뒤 drop
             lengths[over_idx] = 0
             lengths = lengths[lengths != 0]
-            outputs = model(inputs, lengths)
-            loss = criterion(outputs, labels)
+            outputs = model(inputs, lengths[~over_idx])
+            loss = criterion(outputs, labels[~over_idx])
             out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
             out_idx = torch.max(outputs, 1)[1]
             acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
