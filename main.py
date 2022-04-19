@@ -63,7 +63,7 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
     if config.dataset == 'imdb':
         for inputs_dict, labels, lengths, over_idx in dataloader:
             inputs, labels, lengths = inputs_dict['256'].to(config.device), labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
-            
+                
             if inputs_dict['512'].size(0) != 0:
                 long_inputs = inputs_dict['512'].to(config.device)
                 optimizer.zero_grad()
@@ -80,8 +80,10 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
             ## 512 token idx 선별 후 0으로 만든 뒤 drop
             lengths[over_idx] = 0
             lengths = lengths[lengths != 0]
-            outputs = model(inputs, lengths[~over_idx]) # (B, 2)
-            loss = criterion(outputs, labels[~over_idx])
+            labels[over_idx] = 999
+            labels = labels[labels != 999]
+            outputs = model(inputs, lengths) # (B, 2)
+            loss = criterion(outputs, labels)
             out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
             out_idx = torch.max(outputs, 1)[1]
             acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
@@ -131,8 +133,10 @@ def evaluate(model, dataloader, criterion, config):
             ## 512 token idx 선별 후 0으로 만든 뒤 drop
             lengths[over_idx] = 0
             lengths = lengths[lengths != 0]
-            outputs = model(inputs, lengths[~over_idx])
-            loss = criterion(outputs, labels[~over_idx])
+            labels[over_idx] = 999
+            labels = labels[labels != 999]
+            outputs = model(inputs, lengths)
+            loss = criterion(outputs, labels)
             out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
             out_idx = torch.max(outputs, 1)[1]
             acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
