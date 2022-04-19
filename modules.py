@@ -607,6 +607,120 @@ class MHA(nn.Module):
     # backward 계산 후 update 이전에 바꿔치기
 
 
+class AutoMHA(nn.Module):
+    def __init__(self,
+                nhead,
+                d_model,
+                d_trim,
+                dropout=0.1,
+                learnable_mode=True):
+        assert d_model % nhead == 0
+        super().__init__()
+        self.head_dim = d_model // nhead
+        self.d_model = d_model
+
+        self.nhead = nhead
+        self.d_trim = d_trim
+        
+        if learnable_mode: # (gradient가 업데이트 되는 과정을 델타 * R 로 표현한 것 같은데)
+            self.Q_trim = nn.Linear(d_model, d_trim, bias=False)
+            self.K_trim = nn.Linear(d_model, d_trim, bias=False)
+            self.V_trim = nn.Linear(d_model, d_trim, bias=False)
+        else:
+            self.Q_trim = torch.randn(d_trim, d_model, requires_grad=False, bias=False)
+            self.K_trim = torch.randn(d_trim, d_model, requires_grad=False, bias=False)
+            self.V_trim = torch.randn(d_trim, d_model, requires_grad=False, bias=False)
+
+        # nn.parameter를 사용하면 weight을 backward에 쓰겠다는 의미
+
+        self.WQ = nn.Parameter(torch.randn(d_trim, nhead * self.head_dim))
+        self.WK = nn.Parameter(torch.randn(d_trim, nhead * self.head_dim))
+        self.WV = nn.Parameter(torch.randn(d_trim, nhead * self.head_dim))
+        self.K = LinearFunction.apply
+        self.V = LinearFunction.apply
+        self.Q = LinearFunction.apply
+
+        self.softmax = nn.Softmax(dim=-1)
+        self.dropout = nn.Dropout(dropout)
+        
+        self.WO = torch.randn(d_model, nhead * self.head_dim)
+        self.O = FinalFunction.apply
+
+        self.LayerNorm = nn.LayerNorm(d_model, eps=1e-6)
+
+    def forward(self, query, key, value, mask=None, attn_type=None):
+        # query : (B, query_len, d_model) // FloatTensor
+        # key   : (B, key_len, d_model) // FloatTensor
+        # value : (B, seq_len, d_model) // FloatTensor
+        # mask  : (B, 1, src_len) == (B, query_len, key_len)
+        #       : (B, tgt_len, src_len) == (B, query_len, key_len)
+
+        B = key.size(0)
+        key_len = key.size(1)
+        query_len = query.size(1)
+
+        def shape(x, nhead):
+            '''Projection'''
+            # output : (B, nhead, seq_len, head_dim)
+            return x.view(B, -1, nhead, self.head_dim).transpose(1, 2)
+        
+        def unshape(x, nhead):
+            '''Compute context'''
+            # output : (B, seq_len, d_model)
+            return x.transpose(1, 2).contiguous().view(B, -1, nhead * self.head_dim)
+
+
+        def replace_outputs(final_weight, final_bias, start=0, stage=None):
+            with torch.no_grad():
+                final_weight = self.shared_final_weight[:(start + 1) * stage, :]
+                final_bias = self.shared_final_bias[:(start + 1) * stage]
+
+        stage = (self.nhead // 4) * self.head_dim
+        
+        query = self.Q_trim(query)
+        key = self.K_trim(key)
+        value = self.V_trim(value)
+
+        Q = self.Q(query, self.WQ, key_len, stage)
+        K = self.K(key, self.WK, key_len, stage)
+        V = self.V(value, self.WV, key_len, stage)
+
+        # Q : (B, nhead, query_len, head_dim)
+        nhead = self.nhead // 4
+        Q, K, V = shape(Q, nhead), shape(K, nhead), shape(V, nhead)
+
+        ## 2) Calculate scores
+        Q = Q / math.sqrt(self.head_dim)
+        # QK : (B, nhead, query_len, key_len)
+        QK = torch.matmul(Q, K.transpose(2, 3))
+        scores = QK.float()
+        
+        if mask is not None:
+            mask = mask.unsqueeze(1) # (B, 1, 1 or query_len, key_len)
+            scores = scores.masked_fill(mask, -1e18)
+        
+        ## 3) Apply dropout and compute context vector
+        attn = self.softmax(scores).to(query.dtype) # (B, nhead, query_len, key_len)
+        drop_attn = self.dropout(attn)
+
+        # (B, nhead, query_len, key_len) @ (B, nhead, value_len, head_dim)
+
+        context_original = torch.matmul(drop_attn, V)
+        # (B, nhead, query_len, head_dim)
+
+        context = unshape(context_original, nhead) # (B, q_len, d_model)
+        output = self.O(context, self.WO, key_len, stage) # (B, q_len, d_model)
+        output = self.LayerNorm(output)
+        
+        # attns = attn.view(B, self.nhead, query_len, key_len)
+        return output #, attns
+    
+    def update_dropout(self, dropout):
+        self.dropout.p = dropout
+    
+    # backward 계산할 때 gradient 바꿔치기
+    # backward 계산 후 update 이전에 바꿔치기
+    
 
 if __name__=='__main__':
     max_len = 300 # 15
