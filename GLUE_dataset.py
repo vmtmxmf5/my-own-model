@@ -63,8 +63,8 @@ for a in glue['train']:
         max_len = max_num
 
     if len(a_tokens['input_ids']) < 512:
-        if len(a_tokens['question']) < 512:
-            tr.append(dict(a_tokens))
+#         if len(a_tokens['question']) < 512:
+        tr.append(dict(a_tokens))
 
 for b in glue['validation']:
     b_tokens = tokenizer(b['question'] + '</s>' + b['sentence'])
@@ -76,8 +76,8 @@ for b in glue['validation']:
         max_len = max_num
 
     if len(b_tokens['input_ids']) < 512:
-        if len(b_tokens['question']) < 512:
-            val.append(dict(b_tokens))
+#         if len(b_tokens['question']) < 512:
+        val.append(dict(b_tokens))
 
 
 for c in glue['test']:  
@@ -89,8 +89,8 @@ for c in glue['test']:
         max_len = max_num
 
     if len(c_tokens['input_ids']) < 512:
-        if len(c_tokens['question']) < 512:
-            test.append(dict(c_tokens))
+#         if len(c_tokens['question']) < 512:
+        test.append(dict(c_tokens))
 
 print(f'{qnli} max token len: ', max_len)
 with open(f'{qnli}_train.json', 'w', encoding='utf-8') as f:
@@ -114,8 +114,8 @@ for a in glue['train']:
     if max_len < max_num:
         max_len = max_num
     if len(a_tokens['input_ids']) < 512:
-        if len(a_tokens['question']) < 512:
-            tr.append(dict(a_tokens))
+#         if len(a_tokens['question']) < 512:
+        tr.append(dict(a_tokens))
 
 for b in glue['validation']:
     b_tokens = tokenizer(b['question1'] + '</s>' + b['question2'])
@@ -127,8 +127,8 @@ for b in glue['validation']:
     if max_len < max_num:
         max_len = max_num
     if len(b_tokens['input_ids']) < 512:
-        if len(b_tokens['question']) < 512:
-            val.append(dict(b_tokens))
+#         if len(b_tokens['question']) < 512:
+        val.append(dict(b_tokens))
 
 for c in glue['test']:
     c_tokens = tokenizer(c['question1'] + '</s>' + c['question2'])
@@ -140,8 +140,8 @@ for c in glue['test']:
     if max_len < max_num:
         max_len = max_num
     if len(c_tokens['input_ids']) < 512:
-        if len(c_tokens['question']) < 512:
-            test.append(dict(c_tokens))
+#         if len(c_tokens['question']) < 512:
+        test.append(dict(c_tokens))
 print(f'{qqp} max token len: ', max_len)
 with open(f'{qqp}_train.json', 'w', encoding='utf-8') as f:
     f.write(json.dumps(tr, ensure_ascii=False))
