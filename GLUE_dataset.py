@@ -17,18 +17,28 @@ sst, qnli, qqp = 'sst2', 'qnli', 'qqp'
 tr, val, test = [], [], []
 max_len = 0
 glue = load_dataset('glue', sst)
-for a, b, c in zip(glue['train'], glue['validation'], glue['test']):
+for a in glue['train']:
     a_tokens = tokenizer(a['sentence'])
     a_tokens['label'] = [a['label']]
-    b_tokens = tokenizer(b['sentence'])
-    b_tokens['label'] = [b['label']]
-    c_tokens = tokenizer(c['sentence'])
-    c_tokens['label'] = [c['label']]
-    max_num = max(len(a_tokens['input_ids']), len(b_tokens['input_ids']), len(c_tokens['input_ids']))
+    max_num = len(a_tokens['input_ids'])
     if max_len < max_num:
         max_len = max_num
     tr.append(dict(a_tokens))
+
+for b in glue['validation']:
+    b_tokens = tokenizer(b['sentence'])
+    b_tokens['label'] = [b['label']]
+    max_num = len(b_tokens['input_ids'])
+    if max_len < max_num:
+        max_len = max_num
     val.append(dict(b_tokens))
+
+for c in glue['test']:
+    c_tokens = tokenizer(c['sentence'])
+    c_tokens['label'] = [c['label']]
+    max_num = len(c_tokens['input_ids'])
+    if max_len < max_num:
+        max_len = max_num
     test.append(dict(c_tokens))
 print(f'{sst} max token len: ', max_len)
 with open(f'{sst}_train.json', 'w', encoding='utf-8') as f:
@@ -42,33 +52,42 @@ with open(f'{sst}_test.json', 'w', encoding='utf-8') as f:
 tr, val, test = [], [], []
 max_len = 0
 glue = load_dataset('glue', qnli)
-for a, b, c in zip(glue['train'], glue['validation'], glue['test']):
-    a_tokens = tokenizer(a['sentence'])
+for a in glue['train']:
+    a_tokens = tokenizer(a['question'] + '</s>' + a['sentence'])
     a_q = tokenizer(a['question'])
     a_tokens['label'] = [a['label']]
-    a_tokens['question'] = a_q['input_ids']
-    
-    b_tokens = tokenizer(b['sentence'])
-    b_q = tokenizer(b['question'])
-    b_tokens['label'] = [b['label']]
-    b_tokens['question'] = b_q['input_ids']
+    # a_tokens['question'] = a_q['input_ids']
+    max_num = len(a_tokens['input_ids'])
 
-    c_tokens = tokenizer(c['sentence'])
-    c_q = tokenizer(c['question'])
-    c_tokens['label'] = [c['label']]
-    c_tokens['question'] = c_q['input_ids']
-    
-    max_num = max(len(a_tokens['input_ids']), len(b_tokens['input_ids']), len(c_tokens['input_ids']),
-                        len(a_tokens['question']), len(b_tokens['question']), len(c_tokens['question']))
     if max_len < max_num:
         max_len = max_num
 
     if len(a_tokens['input_ids']) < 512:
         if len(a_tokens['question']) < 512:
             tr.append(dict(a_tokens))
+
+for b in glue['validation']:
+    b_tokens = tokenizer(b['question'] + '</s>' + b['sentence'])
+    b_tokens['label'] = [b['label']]
+    # b_tokens['question'] = b_q['input_ids']
+    max_num = len(b_tokens['input_ids'])
+
+    if max_len < max_num:
+        max_len = max_num
+
     if len(b_tokens['input_ids']) < 512:
         if len(b_tokens['question']) < 512:
             val.append(dict(b_tokens))
+
+
+for c in glue['test']:  
+    c_tokens = tokenizer(c['question'] + '</s>' + c['sentence'])
+    c_tokens['label'] = [c['label']]
+    # c_tokens['question'] = c_q['input_ids']
+    max_num = len(c_tokens['input_ids'])
+    if max_len < max_num:
+        max_len = max_num
+
     if len(c_tokens['input_ids']) < 512:
         if len(c_tokens['question']) < 512:
             test.append(dict(c_tokens))
@@ -85,32 +104,41 @@ with open(f'{qnli}_test.json', 'w', encoding='utf-8') as f:
 tr, val, test = [], [], []
 max_len = 0
 glue = load_dataset('glue', qqp)
-for a, b, c in zip(glue['train'], glue['validation'], glue['test']):
-    a_tokens = tokenizer(a['question1'])
-    a_q = tokenizer(a['question2'])
+for a in glue['train']:
+    a_tokens = tokenizer(a['question1'] + '</s>' + a['question2'])
+    
     a_tokens['label'] = [a['label']]
-    a_tokens['question'] = a_q['input_ids']
+    # a_tokens['question'] = a_q['input_ids']
 
-    b_tokens = tokenizer(b['question1'])
-    b_q = tokenizer(b['question2'])
-    b_tokens['label'] = [b['label']]
-    b_tokens['question'] = b_q['input_ids']
-
-    c_tokens = tokenizer(c['question1'])
-    c_q = tokenizer(c['question2'])
-    c_tokens['label'] = [c['label']]
-    c_tokens['question'] = c_q['input_ids']
-
-    max_num = max(len(a_tokens['input_ids']), len(b_tokens['input_ids']), len(c_tokens['input_ids']),
-                     len(a_tokens['question']), len(b_tokens['question']), len(c_tokens['question']))
+    max_num = len(a_tokens['input_ids'])
     if max_len < max_num:
         max_len = max_num
     if len(a_tokens['input_ids']) < 512:
         if len(a_tokens['question']) < 512:
             tr.append(dict(a_tokens))
+
+for b in glue['validation']:
+    b_tokens = tokenizer(b['question1'] + '</s>' + b['question2'])
+    # b_q = tokenizer(b['question2'])
+    b_tokens['label'] = [b['label']]
+    # b_tokens['question'] = b_q['input_ids']
+
+    max_num = len(b_tokens['input_ids'])
+    if max_len < max_num:
+        max_len = max_num
     if len(b_tokens['input_ids']) < 512:
         if len(b_tokens['question']) < 512:
             val.append(dict(b_tokens))
+
+for c in glue['test']:
+    c_tokens = tokenizer(c['question1'] + '</s>' + c['question2'])
+    
+    c_tokens['label'] = [c['label']]
+    # c_tokens['question'] = c_q['input_ids']
+
+    max_num = len(c_tokens['input_ids'])
+    if max_len < max_num:
+        max_len = max_num
     if len(c_tokens['input_ids']) < 512:
         if len(c_tokens['question']) < 512:
             test.append(dict(c_tokens))
@@ -126,16 +154,23 @@ with open(f'{qqp}_test.json', 'w', encoding='utf-8') as f:
 tr, val = [], []
 imdb = load_dataset('imdb')
 max_len = 0
-for a, b in zip(imdb['train'], imdb['test']):
+for a in imdb['train']:
     a_tokens = tokenizer(a['text'])
-    b_tokens = tokenizer(b['text'])
-    max_num = max(len(a_tokens['input_ids']), len(b_tokens['input_ids']))
+    max_num = len(a_tokens['input_ids'])
     if max_len < max_num:
         max_len = max_num
     a_tokens['label'] = [a['label']]
-    b_tokens['label'] = [b['label']]
     if len(a_tokens['input_ids']) < 512:
         tr.append(dict(a_tokens))
+
+for b in imdb['test']:
+    b_tokens = tokenizer(b['text'])
+    max_num = len(b_tokens['input_ids'])
+    if max_len < max_num:
+        max_len = max_num
+
+    b_tokens['label'] = [b['label']]
+
     if len(b_tokens['input_ids']) < 512:
         val.append(dict(b_tokens))
 print('imdb max token len: ', max_len)
