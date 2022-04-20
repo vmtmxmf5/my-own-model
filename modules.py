@@ -607,6 +607,66 @@ class MHA(nn.Module):
     # backward 계산 후 update 이전에 바꿔치기
 
 
+class LinearFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, weight, key_len, stage, bias=None):
+        if key_len <= 256:
+            final_weight = weight[:, :1 * stage]
+        else:
+            final_weight = weight[:, :2 * stage]
+        ctx.save_for_backward(input, final_weight, bias)
+        # print(input.shape, weight.shape) # TODO
+        output = input.matmul(final_weight) # 매우 이상
+        # print(output) # TODO
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, weight, bias = ctx.saved_tensors
+        grad_input = grad_weight = grad_bias = None
+        # print('backprop w.shape : ', weight.shape)
+        # print('grad out : ', grad_output.shape)
+        if ctx.needs_input_grad[0]:
+            grad_input = grad_output.matmul(weight)
+        if ctx.needs_input_grad[1]:
+            grad_weight = grad_output.permute(0,2,1).matmul(input)
+        if bias is not None and ctx.needs_input_grad[2]:
+            grad_bias = grad_output.sum(0)
+        return torch.sum(grad_input, 0), torch.sum(grad_weight, 0), grad_bias, None
+
+
+class FinalFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, weight, key_len, stage, bias=None):
+        if key_len <= 256:
+            final_weight = weight[:1 * stage, :]
+        else:
+            final_weight = weight[:2 * stage, :]
+        # final weight to devcie??
+        ctx.save_for_backward(input, final_weight.t(), bias)
+        # print(input.shape, weight.shape) # TODO
+        output = input.matmul(final_weight) # 매우 이상
+        # print(output) # TODO
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, weight, bias = ctx.saved_tensors
+        grad_input = grad_weight = grad_bias = None
+        # print('backprop w.shape : ', weight.shape)
+        # print(grad_output.shape)
+        # print(input.shape)
+        if ctx.needs_input_grad[0]:
+            grad_input = grad_output.matmul(weight)
+        if ctx.needs_input_grad[1]:
+            # grad_weight = grad_output.t().matmul(input)
+            grad_weight = grad_output.permute(0, 2, 1).matmul(input)
+        if bias is not None and ctx.needs_input_grad[2]:
+            grad_bias = grad_output.sum(0)
+
+        return torch.sum(grad_input, 0), torch.sum(grad_weight, 0), grad_bias, None
+
+    
 class AutoMHA(nn.Module):
     def __init__(self,
                 nhead,
