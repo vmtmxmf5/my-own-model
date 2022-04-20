@@ -49,6 +49,8 @@ def collate_fn(batch):
     ids_batch_256 = torch.cat(ids_res_256, dim=0)
     if ids_res_512 != []:
         ids_batch_512 = torch.cat(ids_res_512, dim=0)
+    else:
+        ids_batch_512 = torch.LongTensor(ids_res_512)
     label_batch = torch.LongTensor(labels).reshape(-1)
     len_batch = torch.LongTensor(lengths)
     return {'256':ids_batch_256, '512':ids_batch_512}, label_batch, len_batch, over_512_len
