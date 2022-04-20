@@ -634,7 +634,7 @@ class LinearFunction(torch.autograd.Function):
             grad_bias = grad_output.sum(0)
         # print(final_weight.size()) # TODO
         grad_weight = torch.sum(grad_weight, 0) # TODO
-        weight = torch.zeros(weight.size())
+        weight = torch.zeros(weight.size()).to(input.device)
         if int(tmp[0]) <= 256:
             weight[:, :1 * int(tmp[1])] = grad_weight
         else:
@@ -665,7 +665,7 @@ class FinalFunction(torch.autograd.Function):
         # print(grad_output.shape)
         # print(weight.shape)
         
-        weight = torch.zeros(weight.t().size()) ## TODO
+        weight = torch.zeros(weight.t().size()).to(input.device) ## TODO
         if int(tmp[0]) <= 256:
             weight[:1 * int(tmp[1]), :] = final_weight
         else:
