@@ -36,8 +36,11 @@ for i in range(24):
         weight_idx = torch.argsort(weights[f'encoder.layer.{i-1}.intermediate.LayerNorm.weight'], descending=True)[:256]
         bias_idx = torch.argsort(weights[f'encoder.layer.{i-1}.intermediate.LayerNorm.bias'], descending=True)[:256]
     weights[f'encoder.layer.{i}.attention.Q_trim.weight'] = weights[f'encoder.layer.{i}.attention.self.query.weight'][weight_idx, :]
+    # weights[f'encoder.layer.{i}.attention.Q_trim.bias'] = weights[f'encoder.layer.{i}.attention.self.query.bias'][bias_idx]
     weights[f'encoder.layer.{i}.attention.K_trim.weight'] = weights[f'encoder.layer.{i}.attention.self.key.weight'][weight_idx, :]
+    # weights[f'encoder.layer.{i}.attention.K_trim.bias'] = weights[f'encoder.layer.{i}.attention.self.key.bias'][bias_idx]
     weights[f'encoder.layer.{i}.attention.V_trim.weight'] = weights[f'encoder.layer.{i}.attention.self.value.weight'][weight_idx, :]
+    # weights[f'encoder.layer.{i}.attention.V_trim.bias'] = weights[f'encoder.layer.{i}.attention.self.value.bias'][bias_idx]
     
 
     weights[f'encoder.layer.{i}.attention.WQ.weight'] = weights.pop(f'encoder.layer.{i}.attention.self.query.weight')
@@ -58,6 +61,12 @@ for i in range(24):
 weights['encoder.dense.weight'] = weights.pop('pooler.dense.weight')
 weights['encoder.dense.bias'] = weights.pop('pooler.dense.bias')
 
+for i in range(24):
+    weights.pop(f'encoder.layer.{i}.attention.self.query.bias')
+    weights.pop(f'encoder.layer.{i}.attention.self.key.bias')
+    weights.pop(f'encoder.layer.{i}.attention.self.value.bias')
+    weights.pop(f'encoder.layer.{i}.attention.output.dense.bias')
+
 plms = collections.OrderedDict(weights)
 
 
@@ -65,5 +74,5 @@ for m in plms:
     print(m, plms[f'{m}'].size())
 
 
-path = 'C:/Users/JHP/Github/test/kcc/Roberta.pt'
+path = 'Roberta.pt'
 torch.save({'model': plms}, path)
