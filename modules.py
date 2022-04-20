@@ -614,25 +614,32 @@ class LinearFunction(torch.autograd.Function):
             final_weight = weight[:, :1 * stage]
         else:
             final_weight = weight[:, :2 * stage]
-        ctx.save_for_backward(input, final_weight, bias)
-        # print(input.shape, weight.shape) # TODO
+        tmp = torch.LongTensor([key_len, stage])
+        ctx.save_for_backward(input, weight, final_weight, bias, tmp) # TODO
+        
         output = input.matmul(final_weight) # 매우 이상
-        # print(output) # TODO
         return output
 
     @staticmethod
     def backward(ctx, grad_output):
-        input, weight, bias = ctx.saved_tensors
+        input, weight, final_weight, bias, tmp = ctx.saved_tensors #TODO
         grad_input = grad_weight = grad_bias = None
         # print('backprop w.shape : ', weight.shape)
         # print('grad out : ', grad_output.shape)
         if ctx.needs_input_grad[0]:
-            grad_input = grad_output.matmul(weight)
+            grad_input = grad_output.matmul(final_weight)
         if ctx.needs_input_grad[1]:
             grad_weight = grad_output.permute(0,2,1).matmul(input)
         if bias is not None and ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(0)
-        return grad_input, torch.sum(grad_weight, 0), grad_bias, None
+        print(final_weight.size()) # TODO
+        grad_weight = torch.sum(grad_weight, 0) # TODO
+        weight = torch.zeros(weight.size())
+        if int(tmp[0]) <= 256:
+            weight[:, :1 * int(tmp[1])] = grad_weight
+        else:
+            weight[:, :2 * int(tmp[1])] = grad_weight
+        return grad_input, weight, grad_bias, None # TODO
 
 
 class FinalFunction(torch.autograd.Function):
@@ -643,7 +650,8 @@ class FinalFunction(torch.autograd.Function):
         else:
             final_weight = weight[:2 * stage, :]
         # final weight to devcie??
-        ctx.save_for_backward(input, final_weight.t(), bias)
+        tmp = torch.LongTensor([key_len, stage])
+        ctx.save_for_backward(input, weight, final_weight.t(), bias, tmp) # TODO
         # print(input.shape, weight.shape) # TODO
         output = input.matmul(final_weight) # 매우 이상
         # print(output) # TODO
@@ -651,20 +659,25 @@ class FinalFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        input, weight, bias = ctx.saved_tensors
+        input, weight, final_weight, bias, tmp = ctx.saved_tensors #TODO
         grad_input = grad_weight = grad_bias = None
         # print('backprop w.shape : ', weight.shape)
         # print(grad_output.shape)
         # print(input.shape)
         if ctx.needs_input_grad[0]:
-            grad_input = grad_output.matmul(weight)
+            grad_input = grad_output.matmul(final_weight) #TODO
         if ctx.needs_input_grad[1]:
             # grad_weight = grad_output.t().matmul(input)
             grad_weight = grad_output.permute(0, 2, 1).matmul(input)
         if bias is not None and ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(0)
-
-        return grad_input, torch.sum(grad_weight, 0), grad_bias, None
+        grad_weight = torch.sum(grad_weight, 0) # TODO 
+        weight = torch.zeros(weight.size())
+        if int(tmp[0]) <= 256:
+            weight[:1 * int(tmp[1]), :] = grad_weight
+        else:
+            weight[:2 * int(tmp[1]), :] = grad_weight
+        return grad_input, weight, grad_bias, None # TODO
 
     
 class AutoMHA(nn.Module):
