@@ -643,7 +643,7 @@ class AutoMHA(nn.Module):
         self.softmax = nn.Softmax(dim=-1)
         self.dropout = nn.Dropout(dropout)
         
-        self.WO = torch.randn(d_model, nhead * self.head_dim)
+        self.WO = nn.Parameter(torch.randn(d_model, nhead * self.head_dim))
         self.O = FinalFunction.apply
 
         self.LayerNorm = nn.LayerNorm(d_model, eps=1e-6)
