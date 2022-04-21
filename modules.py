@@ -771,7 +771,10 @@ class AutoMHA(nn.Module):
         V = self.V(value, self.WV, key_len, stage)
 
         # Q : (B, nhead, query_len, head_dim)
-        nhead = self.nhead // 4
+        if key_len <= 256:  ### TODO
+            nhead = self.nhead // 4
+        else:
+            nhead = 2 * (self.nhead // 4)
         Q, K, V = shape(Q, nhead), shape(K, nhead), shape(V, nhead)
 
         ## 2) Calculate scores
