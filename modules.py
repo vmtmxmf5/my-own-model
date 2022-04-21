@@ -682,6 +682,7 @@ class FinalFunction(torch.autograd.Function):
         grad_weight = torch.sum(grad_weight, 0) # TODO 
         
 #         grad_weight_size = grad_weight.size(0)
+        weight = weight.t()
         if int(tmp[0]) <= 256:
             weight[:1 * int(tmp[1]), :] = grad_weight ### TODO
         else:
