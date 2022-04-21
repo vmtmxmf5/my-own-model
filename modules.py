@@ -610,6 +610,7 @@ class MHA(nn.Module):
 class LinearFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weight, key_len, stage, bias=None):
+        weight = weight.t()
         if key_len <= 256:
             final_weight = weight[:, :1 * stage]
         else:
