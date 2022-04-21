@@ -30,11 +30,11 @@ weights['encoder.embeddings.LayerNorm.bias'] = weights.pop('embeddings.LayerNorm
 
 for i in range(24):
     if i == 0:
-        weight_idx = torch.argsort(weights['encoder.embeddings.LayerNorm.weight'], descending=True)[:256]
-        bias_idx = torch.argsort(weights['encoder.embeddings.LayerNorm.bias'], descending=True)[:256]
+        weight_idx = torch.argsort(weights['encoder.embeddings.LayerNorm.weight'], descending=True)[:512]
+        bias_idx = torch.argsort(weights['encoder.embeddings.LayerNorm.bias'], descending=True)[:512]
     if i >= 1:
-        weight_idx = torch.argsort(weights[f'encoder.layer.{i-1}.intermediate.LayerNorm.weight'], descending=True)[:256]
-        bias_idx = torch.argsort(weights[f'encoder.layer.{i-1}.intermediate.LayerNorm.bias'], descending=True)[:256]
+        weight_idx = torch.argsort(weights[f'encoder.layer.{i-1}.intermediate.LayerNorm.weight'], descending=True)[:512]
+        bias_idx = torch.argsort(weights[f'encoder.layer.{i-1}.intermediate.LayerNorm.bias'], descending=True)[:512]
     weights[f'encoder.layer.{i}.attention.Q_trim.weight'] = weights[f'encoder.layer.{i}.attention.self.query.weight'][weight_idx, :]
     # weights[f'encoder.layer.{i}.attention.Q_trim.bias'] = weights[f'encoder.layer.{i}.attention.self.query.bias'][bias_idx]
     weights[f'encoder.layer.{i}.attention.K_trim.weight'] = weights[f'encoder.layer.{i}.attention.self.key.weight'][weight_idx, :]
