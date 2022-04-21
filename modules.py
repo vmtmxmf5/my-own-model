@@ -615,9 +615,9 @@ class LinearFunction(torch.autograd.Function):
         else:
             final_weight = weight[:, :2 * stage]
         tmp = torch.LongTensor([key_len, stage])
-        ctx.save_for_backward(input, weight, final_weight, bias, tmp) # TODO
+        ctx.save_for_backward(input, weight, final_weight, bias, tmp) 
         
-        output = input.matmul(final_weight) ## TODO
+        output = input.matmul(final_weight) ### TODO
         return output
 
     @staticmethod
@@ -646,30 +646,30 @@ class FinalFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weight, key_len, stage, bias=None):
         if key_len <= 256:
-            final_weight = weight[:, :1 * stage] ## TODO
+            final_weight = weight[:1 * stage, :] ### TODO
         else:
-            final_weight = weight[:, :2 * stage]
+            final_weight = weight[:2 * stage, :] ### TODO
         # final weight to devcie??
         tmp = torch.LongTensor([key_len, stage])
         ctx.save_for_backward(input, weight, final_weight.t(), bias, tmp) 
         # print(input.shape, weight.shape)
-        output = input.matmul(weight) ## TODO
+        output = input.matmul(final_weight) ### TODO
         # print(output) 
         return output
 
     @staticmethod
     def backward(ctx, grad_output):
-        input, weight, final_weight, bias, tmp = ctx.saved_tensors #TODO
+        input, weight, final_weight, bias, tmp = ctx.saved_tensors 
         grad_input = grad_weight = grad_bias = None
         # print('backprop w.shape : ', weight.shape)
         # print(grad_output.shape)
         # print(weight.shape)
         
-        weight = torch.zeros(weight.t().size()).to(input.device) ## TODO
+        weight = torch.zeros(weight.t().size()).to(input.device) 
         if int(tmp[0]) <= 256:
-            weight[:1 * int(tmp[1]), :] = final_weight
+            weight[:, :1 * int(tmp[1])] = final_weight
         else:
-            weight[:2 * int(tmp[1]), :] = final_weight
+            weight[:, 1 * int(tmp[1]):2 * int(tmp[1])] = final_weight[:, :1 * int(tmp[1])] ### TODO
         
         if ctx.needs_input_grad[0]:
             grad_input = grad_output.matmul(weight) ## TODO
@@ -692,7 +692,7 @@ class AutoMHA(nn.Module):
                 learnable_mode=True):
         assert d_model % nhead == 0
         super().__init__()
-        self.head_dim = d_model // nhead
+        self.head_dim = d_trim // nhead ### TODO
         self.d_model = d_model
 
         self.nhead = nhead
@@ -719,7 +719,7 @@ class AutoMHA(nn.Module):
         self.softmax = nn.Softmax(dim=-1)
         self.dropout = nn.Dropout(dropout)
         
-        self.WO = nn.Parameter(torch.randn(d_trim, nhead * self.head_dim))
+        self.WO = nn.Parameter(torch.randn(d_trim, d_model)) ### TODO
         self.O = FinalFunction.apply
 
         self.LayerNorm = nn.LayerNorm(d_model, eps=1e-6)
