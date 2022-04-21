@@ -659,13 +659,13 @@ class FinalFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        input, weight, final_weight, bias, tmp = ctx.saved_tensors 
+        input, org_weight, final_weight, bias, tmp = ctx.saved_tensors 
         grad_input = grad_weight = grad_bias = None
         # print('backprop w.shape : ', weight.shape)
         # print(grad_output.shape)
         # print(weight.shape)
         
-        weight = torch.zeros(weight.t().size()).to(input.device) 
+        weight = torch.zeros(org_weight.t().size()).to(input.device) 
         if int(tmp[0]) <= 256:
             weight[:, :1 * int(tmp[1])] = final_weight
             weights = weight[:, :1 * int(tmp[1])]
@@ -681,7 +681,14 @@ class FinalFunction(torch.autograd.Function):
             grad_bias = grad_output.sum(0)
         grad_weight = torch.sum(grad_weight, 0).t() # TODO 
         
-        return grad_input, grad_weight, grad_bias, None ## TODO
+        org_weight = org_weight.t()
+        grad_weight_size = grad_weight.size(0)
+        if int(tmp[0]) <= 256:
+            org_weight[:grad_weight_size, :1 * int(tmp[1])] = grad_weight ### TODO
+        else:
+            org_weight[:grad_weight_size, 1 * int(tmp[1]):2 * int(tmp[1])] = grad_weight[:, 1 * int(tmp[1]):2 * int(tmp[1])]
+        
+        return grad_input, org_weight.t(), grad_bias, None ## TODO
     
     
 class AutoMHA(nn.Module):
