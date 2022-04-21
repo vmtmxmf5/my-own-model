@@ -681,14 +681,13 @@ class FinalFunction(torch.autograd.Function):
             grad_bias = grad_output.sum(0)
         grad_weight = torch.sum(grad_weight, 0).t() # TODO 
         
-        org_weight = org_weight.t()
         grad_weight_size = grad_weight.size(0)
         if int(tmp[0]) <= 256:
             org_weight[:grad_weight_size, :1 * int(tmp[1])] = grad_weight ### TODO
         else:
             org_weight[:grad_weight_size, 1 * int(tmp[1]):2 * int(tmp[1])] = grad_weight[:, 1 * int(tmp[1]):2 * int(tmp[1])]
         
-        return grad_input, org_weight.t(), grad_bias, None ## TODO
+        return grad_input, org_weight, grad_bias, None ## TODO
     
     
 class AutoMHA(nn.Module):
