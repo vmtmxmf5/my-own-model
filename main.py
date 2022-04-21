@@ -31,18 +31,21 @@ def collate_fn(batch):
     lines, labels, lengths = zip(*batch)
     # max_len = len(max(lines))
     max_len =  max([x for x in lengths if x < 256])
+    max_512 = max(lengths)
 
     ids_res_256, ids_res_512, over_512_len = [], [], []
-    for i, (line, lens) in enumerate(zip(lines, lengths)):
+    for i, line, lens in enumerate(zip(lines, lengths)):
         len_ids = max_len - lens
+        len_512 = max_512 - lens
         if len_ids != 0:
-            padding = torch.ones((1, len_ids), dtype=torch.long)
+            padding = torch.ones((1, abs(len_ids)), dtype=torch.long)
             ids_tensor = torch.cat([torch.LongTensor([line]), padding], dim=1)
         else:
-            ids_tensor = torch.LongTensor([line])
+            padding = torch.ones((1, abs(len_512)), dtype=torch.long)
+            ids_tensor = torch.cat([torch.LongTensor([line]), padding], dim=1)
         if lens < 256:
             ids_res_256.append(ids_tensor)
-        if 256 < lens < 513: #TODO
+        else:
             ids_res_512.append(ids_tensor)
             over_512_len.append(i)
         # label_res.append(torch.LongTensor([label]))
