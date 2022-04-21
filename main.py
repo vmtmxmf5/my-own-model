@@ -30,7 +30,7 @@ class KCCdataset(Dataset):
 def collate_fn(batch):
     lines, labels, lengths = zip(*batch)
     # max_len = len(max(lines))
-    max_len = max(lengths)
+    max_len =  max([x for x in lengths if x < 256])
 
     ids_res_256, ids_res_512, over_512_len = [], [], []
     for i, (line, lens) in enumerate(zip(lines, lengths)):
