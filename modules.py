@@ -637,10 +637,10 @@ class LinearFunction(torch.autograd.Function):
         grad_weight = torch.sum(grad_weight, 0) # TODO
         weight = torch.zeros(weight.size()).to(input.device)
         if int(tmp[0]) <= 256:
-            weight[:, :1 * int(tmp[1])] = grad_weight
+            weight[:1 * int(tmp[1]), :] = grad_weight
         else:
-            weight[:, :2 * int(tmp[1])] = grad_weight
-        return grad_input, weight, grad_bias, None # TODO
+            weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight
+        return grad_input, weight.t(), grad_bias, None # TODO
 
 
 class FinalFunction(torch.autograd.Function):
