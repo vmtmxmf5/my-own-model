@@ -668,11 +668,12 @@ class FinalFunction(torch.autograd.Function):
         weight = torch.zeros(weight.t().size()).to(input.device) 
         if int(tmp[0]) <= 256:
             weight[:, :1 * int(tmp[1])] = final_weight
+            weights = weight[:, :1 * int(tmp[1])]
         else:
             weight[:, 1 * int(tmp[1]):2 * int(tmp[1])] = final_weight[:, :1 * int(tmp[1])] ### TODO
-        
+            weights = weight[:, :2 * int(tmp[1])]
         if ctx.needs_input_grad[0]:
-            grad_input = grad_output.matmul(weight) ## TODO
+            grad_input = grad_output.matmul(weights) ## TODO
         if ctx.needs_input_grad[1]:
             # grad_weight = grad_output.t().matmul(input)
             grad_weight = grad_output.permute(0, 2, 1).matmul(input)
