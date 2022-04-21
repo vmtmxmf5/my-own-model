@@ -680,7 +680,7 @@ class FinalFunction(torch.autograd.Function):
             grad_weight = grad_output.permute(0, 2, 1).matmul(input)
         if bias is not None and ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(0)
-        grad_weight = torch.sum(grad_weight, 0) # TODO 
+        grad_weight = torch.sum(grad_weight, 0).t() # TODO 
         
 #         grad_weight_size = grad_weight.size(0)
         weight = weight.t()
