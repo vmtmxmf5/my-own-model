@@ -172,7 +172,7 @@ if __name__=='__main__':
     parser.add_argument('-pad', '--pad_token_id', type=int, default=1, help='Huggingface pad token id')
     parser.add_argument('-max_len', '--max_position_embeddings', type=int, default=4096+2, help='For ignore idx, add 2 dim')
     parser.add_argument('-class', '--num_labels', type=int, default=2, help='# of classes in labels')
-    parser.add_argument('-trim', '--d_trim', type=int, default=256, help='MHA trimmed dimension')
+    parser.add_argument('-trim', '--d_trim', type=int, default=512, help='MHA trimmed dimension')
     parser.add_argument('-vocab', '--vocab_size', type=int, default=50265, help='Roberta-large Tokenizer Vocab sizes')
     
     # customizing hyperparms.
