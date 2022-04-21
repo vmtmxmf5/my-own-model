@@ -634,7 +634,7 @@ class LinearFunction(torch.autograd.Function):
         if bias is not None and ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(0)
         # print(final_weight.size()) # TODO
-        grad_weight = torch.sum(grad_weight, 0) # TODO
+        grad_weight = torch.sum(grad_weight, 0).t() # TODO
         weight = torch.zeros(weight.size()).to(input.device)
         if int(tmp[0]) <= 256:
             weight[:1 * int(tmp[1]), :] = grad_weight
