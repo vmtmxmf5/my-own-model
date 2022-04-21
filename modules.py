@@ -718,9 +718,9 @@ class AutoMHA(nn.Module):
 
         # nn.parameter를 사용하면 weight을 backward에 쓰겠다는 의미
 
-        self.WQ = nn.Parameter(torch.randn(d_trim, nhead * self.head_dim))
-        self.WK = nn.Parameter(torch.randn(d_trim, nhead * self.head_dim))
-        self.WV = nn.Parameter(torch.randn(d_trim, nhead * self.head_dim))
+        self.WQ = nn.Parameter(torch.randn(d_trim, d_trim))
+        self.WK = nn.Parameter(torch.randn(d_trim, d_trim))
+        self.WV = nn.Parameter(torch.randn(d_trim, d_trim))
         self.K = LinearFunction.apply
         self.V = LinearFunction.apply
         self.Q = LinearFunction.apply
