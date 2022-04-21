@@ -618,7 +618,7 @@ class LinearFunction(torch.autograd.Function):
         tmp = torch.LongTensor([key_len, stage])
         ctx.save_for_backward(input, weight, final_weight, bias, tmp) 
         
-        output = input.matmul(final_weight) ### TODO
+        output = input.matmul(final_weight.t()) ### TODO
         return output
 
     @staticmethod
