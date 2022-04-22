@@ -131,16 +131,16 @@ def evaluate(model, dataloader, criterion, config):
             
             if inputs_dict['512'].size(0) != 0:
                 long_inputs = inputs_dict['512'].to(config.device)
-                optimizer.zero_grad()
+#                 optimizer.zero_grad()
                 outputs = model(long_inputs, lengths[over_idx]) # (B, 2)
                 loss = criterion(outputs, labels[over_idx])
                 out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
                 out_idx = torch.max(outputs, 1)[1]
                 acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
-                loss.backward()
-                optimizer.step()
-                lr_scheduler.step()
-            optimizer.zero_grad()
+#                 loss.backward()
+#                 optimizer.step()
+#                 lr_scheduler.step()
+#             optimizer.zero_grad()
             ## 512 token idx 선별 후 0으로 만든 뒤 drop
             lengths[over_idx] = 0
             lengths = lengths[lengths != 0]
