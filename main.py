@@ -82,7 +82,7 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
                 loss = criterion(outputs, labels[over_idx])
                 out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
                 out_idx = torch.max(outputs, 1)[1]
-                acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
+                acc = torch.sum((out_idx == labels[over_idx]) / out_idx.shape[0], dim=0).item()
                 loss.backward()
                 optimizer.step()
                 lr_scheduler.step()
@@ -136,7 +136,7 @@ def evaluate(model, dataloader, criterion, config):
                 loss = criterion(outputs, labels[over_idx])
                 out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
                 out_idx = torch.max(outputs, 1)[1]
-                acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
+                acc = torch.sum((out_idx == labels[over_idx]) / out_idx.shape[0], dim=0).item()
 #                 loss.backward()
 #                 optimizer.step()
 #                 lr_scheduler.step()
