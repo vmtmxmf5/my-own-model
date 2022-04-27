@@ -22,7 +22,7 @@ class KCCdataset(Dataset):
         return len(self.train)
     def __getitem__(self, index):
         line = self.train[index]
-        label = str(int(line['label']) + 2)
+        label = line['label']
         length = len(line['input_ids'])
         return line['input_ids'], label, length
 
@@ -257,7 +257,7 @@ if __name__=='__main__':
     
     ## 실험모드 추후 반드시 수정할 것
     parser.add_argument('-B', '--batch_size', type=int, default=4, help='Batch sizes')
-    parser.add_argument('-class', '--num_labels', type=int, default=7, help='# of classes in labels')
+    parser.add_argument('-class', '--num_labels', type=int, default=5, help='# of classes in labels')
     parser.add_argument('--num_workers', type=int, default=4, help='num workers')
     parser.add_argument('--device', type=str, default='cuda', help='If you want to use cuda, then write down cuda:0 or smt else')
     parser.add_argument('--epochs', type=int, default=50, help='training epochs')
