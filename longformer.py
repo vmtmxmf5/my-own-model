@@ -22,6 +22,7 @@ class KCCdataset(Dataset):
     def __len__(self):
         return len(self.train)
     def __getitem__(self, index):
+        ### line : {'input_ids':[], 'attention_mask':[], 'label':0 or 1}
         line = self.train[index]
         label = line['label']
         length = len(line['input_ids'])
@@ -32,14 +33,17 @@ def collate_fn(batch):
     lines, labels, lengths, attn = zip(*batch)
     # max_len = len(max(lines))
     max_len = max(lengths)
-
+    
     ids_res, attn_res = [], []
+    ### padding을 만든다
     for line, att, lens in zip(lines, attn, lengths):
+        ### batch 안에 있는 문장중 가장 긴 문장 길이 - 현재 문장 길이 만큼 pad를 넣는다
         len_ids = max_len - lens
         if len_ids != 0:
             padding = torch.ones((1, len_ids), dtype=torch.long)
             ids_tensor = torch.cat([torch.LongTensor([line]), padding], dim=1)
             att_tensor = torch.cat([torch.LongTensor([att]), padding], dim=1)
+        ### batch 안에 max length 문장의 경우 굳이 pad를 할 필요가 없다 (그 자체로 가장 긴 문장이므로)
         else:
             ids_tensor = torch.LongTensor([line])
             att_tensor = torch.LongTensor([att])
@@ -61,15 +65,23 @@ def train(model, dataloader, criterion, optimizer, lr_scheduler, config, train_b
     total_num = len(dataloader)
     if config.dataset == 'imdb':
         for inputs, labels, lengths in dataloader:
+            ### 문장길이 512 이하만 받아온다
             if inputs['input_ids'].shape[1] < 513:
+                ### 데이터를 gpu에 올린다
                 inputs = {k:v.to(config.device) for k, v in inputs.items()}
                 labels, lengths = labels.to(config.device), lengths.to(config.device) # multi-gpu 사용시 제거
                 optimizer.zero_grad()
-
+                
+                ### output을 loss에 넣는다.
+                ### loss가 cross entropy이므로, 함수 안에 softmax가 내장되어 있다
                 outputs = model(inputs) # (B, 2)
                 loss = criterion(outputs, labels)
+                
+                ### acc를 계산하기 위해 logit 값에 softmax를 취한다
                 out_idx = torch.nn.functional.softmax(outputs.float(), dim=-1)
+                ### softmax 중 가장 큰 값을 뽑아 그 인덱스를 반환한다
                 out_idx = torch.max(outputs, 1)[1]
+                ### label과 예측 index와 같은 개수 / batch
                 acc = torch.sum((out_idx == labels) / out_idx.shape[0], dim=0).item()
 
                 loss.backward()
