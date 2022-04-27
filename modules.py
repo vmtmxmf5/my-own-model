@@ -607,17 +607,107 @@ class MHA(nn.Module):
     # backward 계산 후 update 이전에 바꿔치기
 
 
+ ### max_len == 512
+# class LinearFunction(torch.autograd.Function):
+#     @staticmethod
+#     def forward(ctx, input, weight, key_len, stage, bias=None):
+#         weight = weight.t()
+#         if key_len <= 256:
+#             final_weight = weight[:, :1 * stage]
+#         else:
+#             final_weight = weight[:, :2 * stage]
+#         tmp = torch.LongTensor([key_len, stage])
+#         ctx.save_for_backward(input, weight, final_weight.t(), bias, tmp) 
+        
+#         output = input.matmul(final_weight) ### TODO
+#         return output
+
+#     @staticmethod
+#     def backward(ctx, grad_output):
+#         input, weight, final_weight, bias, tmp = ctx.saved_tensors #TODO
+#         grad_input = grad_weight = grad_bias = None
+#         # print('backprop w.shape : ', weight.shape)
+#         # print('grad out : ', grad_output.shape)
+#         if ctx.needs_input_grad[0]:
+#             grad_input = grad_output.matmul(final_weight)
+#         if ctx.needs_input_grad[1]:
+#             grad_weight = grad_output.permute(0,2,1).matmul(input)
+#         if bias is not None and ctx.needs_input_grad[2]:
+#             grad_bias = grad_output.sum(0)
+#         # print(final_weight.size()) # TODO
+#         grad_weight = torch.sum(grad_weight, 0) # TODO
+#         weight = torch.zeros(weight.size()).to(input.device)
+#         if int(tmp[0]) <= 256:
+#             weight[:1 * int(tmp[1]), :] = grad_weight
+#         else:
+#             weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight[1 * int(tmp[1]):2 * int(tmp[1]), :]
+#         return grad_input, weight.t(), grad_bias, None # TODO
+
+
+# class FinalFunction(torch.autograd.Function):
+#     @staticmethod
+#     def forward(ctx, input, weight, key_len, stage, bias=None):
+#         if key_len <= 256:
+#             final_weight = weight[:1 * stage, :] ### TODO
+#         else:
+#             final_weight = weight[:2 * stage, :] ### TODO
+#         # final weight to devcie??
+#         tmp = torch.LongTensor([key_len, stage])
+#         ctx.save_for_backward(input, weight, final_weight.t(), bias, tmp) 
+#         # print(input.shape, weight.shape)
+#         output = input.matmul(final_weight) ### TODO
+#         # print(output) 
+#         return output
+
+#     @staticmethod
+#     def backward(ctx, grad_output):
+#         input, org_weight, final_weight, bias, tmp = ctx.saved_tensors 
+#         grad_input = grad_weight = grad_bias = None
+#         # print('backprop w.shape : ', weight.shape)
+#         # print(grad_output.shape)
+#         # print(weight.shape)
+        
+#         weight = torch.zeros(org_weight.t().size()).to(input.device) 
+#         if int(tmp[0]) <= 256:
+#             weight[:, :1 * int(tmp[1])] = final_weight
+#             weights = weight[:, :1 * int(tmp[1])]
+#         else:
+#             weight[:, 1 * int(tmp[1]):2 * int(tmp[1])] = final_weight[:, :1 * int(tmp[1])] ### TODO
+#             weights = weight[:, :2 * int(tmp[1])]
+#         if ctx.needs_input_grad[0]:
+#             grad_input = grad_output.matmul(weights) ## TODO
+#         if ctx.needs_input_grad[1]:
+#             # grad_weight = grad_output.t().matmul(input)
+#             grad_weight = grad_output.permute(0, 2, 1).matmul(input)
+#         if bias is not None and ctx.needs_input_grad[2]:
+#             grad_bias = grad_output.sum(0)
+#         grad_weight = torch.sum(grad_weight, 0).t() # TODO 
+        
+# #         grad_weight_size = grad_weight.size(0)
+#         weight = weight.t()
+#         if int(tmp[0]) <= 256:
+#             weight[:1 * int(tmp[1]), :] = grad_weight ### TODO
+#         else:
+#             weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight[1 * int(tmp[1]):2 * int(tmp[1]), :]
+        
+#         return grad_input, weight, grad_bias, None ## TODO
+
+
 class LinearFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weight, key_len, stage, bias=None):
-        weight = weight.t()
-        if key_len <= 256:
+        # weight = weight.t()
+        if key_len <= 512:
             final_weight = weight[:, :1 * stage]
-        else:
+        if 512 < key_len <= 1024:
             final_weight = weight[:, :2 * stage]
+        if 1024 < key_len <= 2048:
+            final_weight = weight[:, :3 * stage]
+        else:
+            final_weight = weight[:, :4 * stage]
         tmp = torch.LongTensor([key_len, stage])
-        ctx.save_for_backward(input, weight, final_weight.t(), bias, tmp) 
-        
+        ctx.save_for_backward(input, weight, final_weight.t(), bias, tmp) # TODO
+        # print(input.shape)
         output = input.matmul(final_weight) ### TODO
         return output
 
@@ -636,26 +726,36 @@ class LinearFunction(torch.autograd.Function):
         # print(final_weight.size()) # TODO
         grad_weight = torch.sum(grad_weight, 0) # TODO
         weight = torch.zeros(weight.size()).to(input.device)
-        if int(tmp[0]) <= 256:
+        if int(tmp[0]) <= 512:
             weight[:1 * int(tmp[1]), :] = grad_weight
-        else:
+        if 512 < int(tmp[0]) <= 1024:
             weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight[1 * int(tmp[1]):2 * int(tmp[1]), :]
+        if 1024 < int(tmp[0]) <= 2048:
+            weight[2 * int(tmp[1]):3 * int(tmp[1]), :] = grad_weight[2 * int(tmp[1]):3 * int(tmp[1]), :]
+        else:
+            weight[3 * int(tmp[1]):4 * int(tmp[1]), :] = grad_weight[3 * int(tmp[1]):4 * int(tmp[1]), :]
+        
         return grad_input, weight.t(), grad_bias, None # TODO
-
+ 
 
 class FinalFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weight, key_len, stage, bias=None):
-        if key_len <= 256:
+        # weight = weight.t() ### TODO
+        # print(weight.shape)
+        if key_len <= 512:
             final_weight = weight[:1 * stage, :] ### TODO
-        else:
+        if 512 < key_len <= 1024:
             final_weight = weight[:2 * stage, :] ### TODO
+        if 1024 < key_len <= 2048:
+            final_weight = weight[:3 * stage, :] ### TODO
+        else:
+            final_weight = weight[:4 * stage, :] ### TODO
         # final weight to devcie??
         tmp = torch.LongTensor([key_len, stage])
         ctx.save_for_backward(input, weight, final_weight.t(), bias, tmp) 
-        # print(input.shape, weight.shape)
+
         output = input.matmul(final_weight) ### TODO
-        # print(output) 
         return output
 
     @staticmethod
@@ -666,31 +766,45 @@ class FinalFunction(torch.autograd.Function):
         # print(grad_output.shape)
         # print(weight.shape)
         
-        weight = torch.zeros(org_weight.t().size()).to(input.device) 
-        if int(tmp[0]) <= 256:
-            weight[:, :1 * int(tmp[1])] = final_weight
+        weight = torch.zeros(org_weight.t().size()).to(input.device) ## TODO
+        # print(weight.shape)
+        # print(final_weight.shape)
+        if int(tmp[0]) <= 512:
+            weight[:, :1 * int(tmp[1])] = final_weight ### TODO
             weights = weight[:, :1 * int(tmp[1])]
-        else:
-            weight[:, 1 * int(tmp[1]):2 * int(tmp[1])] = final_weight[:, :1 * int(tmp[1])] ### TODO
+        if 512 < int(tmp[0]) <= 1024:
+            weight[:, 1 * int(tmp[1]):2 * int(tmp[1])] = final_weight[:, 1 * int(tmp[1]):] ### TODO
             weights = weight[:, :2 * int(tmp[1])]
+        if 1024 < int(tmp[0]) <= 2048:
+            weight[:, 2 * int(tmp[1]):3 * int(tmp[1])] = final_weight[:, 2 * int(tmp[1]):] ### TODO
+            weights = weight[:, :3 * int(tmp[1])]
+        if 2048 < int(tmp[0]) <= 4096:
+            weight[:, 3 * int(tmp[1]):4 * int(tmp[1])] = final_weight[:, 3 * int(tmp[1]):] ### TODO
+            weights = weight[:, :4 * int(tmp[1])]
         if ctx.needs_input_grad[0]:
             grad_input = grad_output.matmul(weights) ## TODO
+            # print(grad_input.shape, grad_output.shape)
         if ctx.needs_input_grad[1]:
             # grad_weight = grad_output.t().matmul(input)
             grad_weight = grad_output.permute(0, 2, 1).matmul(input)
         if bias is not None and ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(0)
         grad_weight = torch.sum(grad_weight, 0).t() # TODO 
+        # print(grad_weight)
         
-#         grad_weight_size = grad_weight.size(0)
+        grad_weight_size = grad_weight.size(0)
+        # print(weight.shape, grad_weight.size())
         weight = weight.t()
-        if int(tmp[0]) <= 256:
+        if int(tmp[0]) <= 512:
             weight[:1 * int(tmp[1]), :] = grad_weight ### TODO
-        else:
+        if 512 < int(tmp[0]) <= 1024:
             weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight[1 * int(tmp[1]):2 * int(tmp[1]), :]
-        
+        if 1024 < int(tmp[0]) <= 2048:
+            weight[2 * int(tmp[1]):3 * int(tmp[1]), :] = grad_weight[2 * int(tmp[1]):3 * int(tmp[1]), :]
+        else:
+            weight[3 * int(tmp[1]):4 * int(tmp[1]), :] = grad_weight[3 * int(tmp[1]):4 * int(tmp[1]), :]
         return grad_input, weight, grad_bias, None ## TODO
-    
+
     
 class AutoMHA(nn.Module):
     def __init__(self,
