@@ -30,13 +30,23 @@ class KCCdataset(Dataset):
 def collate_fn(batch):
     lines, labels, lengths = zip(*batch)
     # max_len = len(max(lines))
-    max_512 =  max([x for x in lengths if x <= 512])
-    max_1024 = max([x for x in lengths if 512 < x <= 1024])
-    max_2048 = max([x for x in lengths if 1024 < x <= 2048])
-    max_4096 = max(lengths)
+    max_512, max_1024, max_2048, max_4096 = 0, 0, 0, 0
+    for x in lengths:
+        if x <= 512:
+            if max_512 < x:
+                max_512 = x
+        if 512 < x <= 1024:
+            if max_1024 < x:
+                max_1024 = x
+        if 1024 < x <= 2048:
+            if max_2048 < x:
+                max_2048 = x
+        if 2048 < x:
+            if max_4096 < x:
+                max_4096 = x
 
     ids_res_512, ids_res_1024, over_idx_1024, ids_res_2048, over_idx_2048, ids_res_4096, over_idx_4096 = [], [], [], [], [], [], []
-    for i, line, lens in enumerate(zip(lines, lengths)):
+    for i, (line, lens) in enumerate(zip(lines, lengths)):
         len_512 = max_512 - lens
         len_1024 = max_1024 - lens
         len_2048 = max_2048 - lens
