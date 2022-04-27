@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from modules import MHA
+from modules import AutoMHA, MHA
 from modules import PositionwiseFeedForward
 from modules import ActivationFunction
 from modules import sequence_mask
@@ -75,7 +75,7 @@ class TransformerEncoderLayer(nn.Module):
     def __init__(self, d_model, heads, d_ff, dropout, d_trim,
                  pos_ffn_activation_fn=ActivationFunction.relu):
         super(TransformerEncoderLayer, self).__init__()
-        self.attention = MHA(heads, d_model, d_trim, dropout)
+        self.attention = AutoMHA(heads, d_model, d_trim, dropout) ### shared weights 쓰고 싶으면 MHA로 변경할것
         self.intermediate = PositionwiseFeedForward(d_model, d_ff, dropout,
                                                     pos_ffn_activation_fn)
         # self.LayerNorm = nn.LayerNorm(d_model, eps=1e-6)
