@@ -703,7 +703,7 @@ class LinearFunction(torch.autograd.Function):
             final_weight = weight[:, :2 * stage]
         if 1024 < key_len <= 2048:
             final_weight = weight[:, :3 * stage]
-        else:
+        if 2048 < key_len < 4096:
             final_weight = weight[:, :4 * stage]
         tmp = torch.LongTensor([key_len, stage])
         ctx.save_for_backward(input, weight, final_weight.t(), bias, tmp) # TODO
@@ -732,11 +732,11 @@ class LinearFunction(torch.autograd.Function):
             weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight[1 * int(tmp[1]):2 * int(tmp[1]), :]
         if 1024 < int(tmp[0]) <= 2048:
             weight[2 * int(tmp[1]):3 * int(tmp[1]), :] = grad_weight[2 * int(tmp[1]):3 * int(tmp[1]), :]
-        else:
+        if 2048 < int(tmp[0]) < 4096:
             weight[3 * int(tmp[1]):4 * int(tmp[1]), :] = grad_weight[3 * int(tmp[1]):4 * int(tmp[1]), :]
         
         return grad_input, weight.t(), grad_bias, None # TODO
- 
+
 
 class FinalFunction(torch.autograd.Function):
     @staticmethod
@@ -749,7 +749,7 @@ class FinalFunction(torch.autograd.Function):
             final_weight = weight[:2 * stage, :] ### TODO
         if 1024 < key_len <= 2048:
             final_weight = weight[:3 * stage, :] ### TODO
-        else:
+        if 2048 < key_len < 4096:
             final_weight = weight[:4 * stage, :] ### TODO
         # final weight to devcie??
         tmp = torch.LongTensor([key_len, stage])
@@ -801,7 +801,7 @@ class FinalFunction(torch.autograd.Function):
             weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight[1 * int(tmp[1]):2 * int(tmp[1]), :]
         if 1024 < int(tmp[0]) <= 2048:
             weight[2 * int(tmp[1]):3 * int(tmp[1]), :] = grad_weight[2 * int(tmp[1]):3 * int(tmp[1]), :]
-        else:
+        if 2048 < int(tmp[0]) < 4096:
             weight[3 * int(tmp[1]):4 * int(tmp[1]), :] = grad_weight[3 * int(tmp[1]):4 * int(tmp[1]), :]
         return grad_input, weight, grad_bias, None ## TODO
 
