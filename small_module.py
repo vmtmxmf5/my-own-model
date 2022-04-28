@@ -306,12 +306,15 @@ class embeddings(nn.Module):
         self.position_embedding_type = getattr(config, "position_embedding_type", "absolute")
         self.register_buffer("position_ids", torch.arange(config.max_position_embeddings).expand((1, -1)))
         self.padding_idx = config.pad_token_id
+        
+        ### 수정
         if version.parse(torch.__version__) > version.parse("1.6.0"):
             self.register_buffer(
                 "token_type_ids",
                 torch.zeros(self.position_ids.size(), dtype=torch.long),
                 persistent=False,
             )
+        ### 수정
 
     def forward(
         self, input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None, past_key_values_length=0
@@ -342,12 +345,15 @@ class embeddings(nn.Module):
                 token_type_ids = buffered_token_type_ids_expanded
             else:
                 token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.position_ids.device)
+        ### 수정
         
         if inputs_embeds is None:
             inputs_embeds = self.word_embeddings(input_ids)
-        token_type_embeddings = self.token_type_embeddings(token_type_ids)
-        ### 
-        embeddings = inputs_embeds + token_type_embeddings
+        
+        ### 수정
+        token_type_embeddings = self.token_type_embeddings(token_type_ids) # 삭제
+        embeddings = inputs_embeds + token_type_embeddings # 앞 부분만 살려
+        ### 수정
         if self.position_embedding_type == "absolute":
             position_embeddings = self.position_embeddings(position_ids)
             embeddings += position_embeddings
