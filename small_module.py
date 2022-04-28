@@ -43,7 +43,7 @@ class PositionwiseFeedForward(nn.Module):
         super(PositionwiseFeedForward, self).__init__()
         self.w_1 = nn.Linear(d_model, d_ff)
         self.w_2 = nn.Linear(d_ff, d_model)
-        self.LayerNorm = nn.LayerNorm(d_model, eps=1e-6)
+        self.LayerNorm = nn.LayerNorm(d_model, eps=1e-12)
         self.dropout_1 = nn.Dropout(dropout)
         self.activation = ACTIVATION_FUNCTIONS[activation_fn]
         self.dropout_2 = nn.Dropout(dropout)
@@ -785,7 +785,7 @@ class MHA(nn.Module):
         self.shared_final_weight = torch.randn(d_model, nhead * self.head_dim)
         self.shared_final_bias = torch.randn(nhead * self.head_dim)
 
-        self.LayerNorm = nn.LayerNorm(d_model, eps=1e-6)
+        self.LayerNorm = nn.LayerNorm(d_model, eps=1e-12)
 
     def forward(self, query, key, value, mask=None, attn_type=None):
         # query : (B, query_len, d_model) // FloatTensor
