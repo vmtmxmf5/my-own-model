@@ -468,13 +468,13 @@ class embeddings(nn.Module):
 ### 512 token 미만용
 class LinearFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input, weight, key_len, stage, bias=None):
+    def forward(ctx, input, weight, bias, key_len, stage):
         if key_len <= 256:
             final_weight = weight[:, :1 * stage]
         else:
             final_weight = weight[:, 1 * stage:]
         tmp = torch.LongTensor([key_len, stage])
-        ctx.save_for_backward(input, weight, final_weight, bias, tmp) # TODO
+        ctx.save_for_backward(input, final_weight, bias, tmp) # TODO
         # print(input.shape)
         output = input.matmul(final_weight.t()) ### TODO
         if bias is not None:
@@ -483,7 +483,7 @@ class LinearFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        input, weight, final_weight, bias, tmp = ctx.saved_tensors #TODO
+        input, final_weight, bias, tmp = ctx.saved_tensors #TODO
         grad_input = grad_weight = grad_bias = None
         # print('backprop w.shape : ', weight.shape)
         # print('grad out : ', grad_output.shape)
@@ -506,7 +506,7 @@ class LinearFunction(torch.autograd.Function):
 
 class FinalFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input, weight, key_len, stage, bias=None):
+    def forward(ctx, input, weight, bias, key_len, stage):
         # weight = weight.t() ### TODO
         # print(weight.shape)
         if key_len <= 256:
@@ -515,7 +515,7 @@ class FinalFunction(torch.autograd.Function):
             final_weight = weight[1 * stage:, :] ### TODO
         # final weight to devcie??
         tmp = torch.LongTensor([key_len, stage])
-        ctx.save_for_backward(input, weight, final_weight, bias, tmp) 
+        ctx.save_for_backward(input, final_weight, bias, tmp) 
 
         output = input.matmul(final_weight.t()) ### TODO
         if bias is not None:
@@ -524,7 +524,7 @@ class FinalFunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        input, org_weight, final_weight, bias, tmp = ctx.saved_tensors 
+        input, final_weight, bias, tmp = ctx.saved_tensors 
         grad_input = grad_weight = grad_bias = None
         # print('backprop w.shape : ', weight.shape)
         # print(grad_output.shape)
@@ -624,9 +624,9 @@ class AutoMHA(nn.Module):
 
 #         stage = int(self.d_model / 2)
         
-        Q = self.Q(query, self.WQ, key_len, self.d_model, self.bQ)
-        K = self.K(key, self.WK, key_len, self.d_model, self.bK)
-        V = self.V(value, self.WV, key_len, self.d_model, self.bV)
+        Q = self.Q(query, self.WQ, self.bQ, key_len, self.d_model)
+        K = self.K(key, self.WK, self.bK, key_len, self.d_model)
+        V = self.V(value, self.WV, self.bV, key_len, self.d_model)
         
         # Q : (B, nhead, query_len, head_dim)
         Q, K, V = shape(Q), shape(K), shape(V)
@@ -651,7 +651,7 @@ class AutoMHA(nn.Module):
         # (B, nhead, query_len, head_dim)
 
         context = unshape(context_original) # (B, q_len, d_model)
-        output = self.O(context, self.WO, key_len, self.d_model, self.bO) # (B, q_len, d_model)
+        output = self.O(context, self.WO, self.bO, key_len, self.d_model) # (B, q_len, d_model)
         # print(output.shape)
         output = self.LayerNorm(output)
         
