@@ -56,9 +56,9 @@ class PositionwiseFeedForward(nn.Module):
             (FloatTensor): Output ``(batch_size, input_len, model_dim)``.
         """
 
-        inter = self.dropout_1(self.activation(self.w_1(self.LayerNorm(x))))
+        inter = self.dropout_1(self.activation(self.w_1(x)))
         output = self.dropout_2(self.w_2(inter))
-        return output + x
+        return self.LayerNorm(output + x)
 
     def update_dropout(self, dropout):
         self.dropout_1.p = dropout
