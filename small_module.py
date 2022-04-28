@@ -300,7 +300,7 @@ class embeddings(nn.Module):
         self.word_embeddings = nn.Embedding(config.vocab_size, config.d_model, padding_idx=config.pad_token_id)
         self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.d_model)
         self.token_type_embeddings = nn.Embedding(2, config.d_model)
-        self.LayerNorm = nn.LayerNorm(config.d_model)
+        self.LayerNorm = nn.LayerNorm(config.d_model, eps=1e-12)
         self.dropout = nn.Dropout(config.dropout)
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.position_embedding_type = getattr(config, "position_embedding_type", "absolute")
@@ -648,7 +648,7 @@ class AutoMHA(nn.Module):
         self.bO_512 = nn.Parameter(torch.randn(d_model))
         self.O = FinalFunction.apply
 
-        self.LayerNorm = nn.LayerNorm(d_model, eps=1e-6)
+        self.LayerNorm = nn.LayerNorm(d_model, eps=1e-12)
 
     def forward(self, query, key, value, mask=None, attn_type=None):
         # query : (B, query_len, d_model) // FloatTensor
