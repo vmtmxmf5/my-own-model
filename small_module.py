@@ -306,17 +306,26 @@ class embeddings(nn.Module):
         self.position_embedding_type = getattr(config, "position_embedding_type", "absolute")
         self.register_buffer("position_ids", torch.arange(config.max_position_embeddings).expand((1, -1)))
         self.padding_idx = config.pad_token_id
+        if version.parse(torch.__version__) > version.parse("1.6.0"):
+            self.register_buffer(
+                "token_type_ids",
+                torch.zeros(self.position_ids.size(), dtype=torch.long),
+                persistent=False,
+            )
 
     def forward(
         self, input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None, past_key_values_length=0
     ):
         ## input_ids : (B, T)
+#         if position_ids is None:
+#             if input_ids is not None:
+#                 # Create the position ids from the input token ids. Any padded tokens remain padded.
+#                 position_ids = create_position_ids_from_input_ids(input_ids, self.padding_idx, past_key_values_length)
+#             else:
+#                 position_ids = self.create_position_ids_from_inputs_embeds(inputs_embeds)
+        ### 수정
         if position_ids is None:
-            if input_ids is not None:
-                # Create the position ids from the input token ids. Any padded tokens remain padded.
-                position_ids = create_position_ids_from_input_ids(input_ids, self.padding_idx, past_key_values_length)
-            else:
-                position_ids = self.create_position_ids_from_inputs_embeds(inputs_embeds)
+            position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
 
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -324,11 +333,21 @@ class embeddings(nn.Module):
             input_shape = inputs_embeds.size()[:-1]
 
         seq_length = input_shape[1]
-
+        
+        ### 수정
+        if token_type_ids is None:
+            if hasattr(self, "token_type_ids"):
+                buffered_token_type_ids = self.token_type_ids[:, :seq_length]
+                buffered_token_type_ids_expanded = buffered_token_type_ids.expand(input_shape[0], seq_length)
+                token_type_ids = buffered_token_type_ids_expanded
+            else:
+                token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.position_ids.device)
+        
         if inputs_embeds is None:
             inputs_embeds = self.word_embeddings(input_ids)
-
-        embeddings = inputs_embeds
+        token_type_embeddings = self.token_type_embeddings(token_type_ids)
+        ### 
+        embeddings = inputs_embeds + token_type_embeddings
         if self.position_embedding_type == "absolute":
             position_embeddings = self.position_embeddings(position_ids)
             embeddings += position_embeddings
