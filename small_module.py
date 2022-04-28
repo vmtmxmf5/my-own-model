@@ -606,15 +606,15 @@ class AutoMHA(nn.Module):
         key_len = key.size(1)
         query_len = query.size(1)
 
-        def shape(x, nhead):
+        def shape(x):
             '''Projection'''
             # output : (B, nhead, seq_len, head_dim)
-            return x.view(B, -1, nhead, self.head_dim).transpose(1, 2)
+            return x.view(B, -1, self.nhead, self.head_dim).transpose(1, 2)
         
-        def unshape(x, nhead):
+        def unshape(x):
             '''Compute context'''
             # output : (B, seq_len, d_model)
-            return x.transpose(1, 2).contiguous().view(B, -1, nhead * self.head_dim)
+            return x.transpose(1, 2).contiguous().view(B, -1, self.nhead * self.head_dim)
 
 
         def replace_outputs(final_weight, final_bias, start=0, stage=None):
@@ -629,11 +629,7 @@ class AutoMHA(nn.Module):
         V = self.V(value, self.WV, key_len, self.d_model, self.bV)
         
         # Q : (B, nhead, query_len, head_dim)
-        if key_len <= 256:  ### TODO
-            nhead = self.nhead // 4
-        else:
-            nhead = 2 * (self.nhead // 4)
-        Q, K, V = shape(Q, nhead), shape(K, nhead), shape(V, nhead)
+        Q, K, V = shape(Q), shape(K), shape(V)
         
         ## 2) Calculate scores
         Q = Q / math.sqrt(self.head_dim)
@@ -654,7 +650,7 @@ class AutoMHA(nn.Module):
         context_original = torch.matmul(drop_attn, V)
         # (B, nhead, query_len, head_dim)
 
-        context = unshape(context_original, nhead) # (B, q_len, d_model)
+        context = unshape(context_original) # (B, q_len, d_model)
         output = self.O(context, self.WO, key_len, self.d_model, self.bO) # (B, q_len, d_model)
         # print(output.shape)
         output = self.LayerNorm(output)
