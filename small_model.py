@@ -168,6 +168,7 @@ class TransformerEncoder(EncoderBase):
         for lay in self.layer:
             out = lay(out, mask)
         # out = self.LayerNorm(out)
+        out = out[:, 0, :]
         out = self.dense(out)
         return emb, out, lengths
 
@@ -184,13 +185,13 @@ class ClassificationHead(nn.Module):
         super().__init__()
         self.encoder = TransformerEncoder(config)
         self.out_proj = nn.Linear(config.d_model, config.num_labels)
-        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
+#         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
     def forward(self, inputs, lengths):
         outputs = self.encoder(inputs, lengths)
         _, x, __ = outputs
-        x = x[:, 0, :]  # take <s> token (equiv. to [CLS])
+#         x = x[:, 0, :]  # take <s> token (equiv. to [CLS])
         x = self.actiavation(self.dense(x))
         x = self.out_proj(x)
         return x            
