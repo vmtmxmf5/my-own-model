@@ -495,13 +495,15 @@ class LinearFunction(torch.autograd.Function):
             grad_bias = grad_output.sum(0)
         # print(final_weight.size()) # TODO
         grad_weight = torch.sum(grad_weight, 0) # TODO
-        # weight = torch.zeros(weight.size()).to(input.device)
-        # if int(tmp[0]) <= 256:
-        #     weight[:1 * int(tmp[1]), :] = grad_weight
-        # else:
-        #     weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight[1 * int(tmp[1]):2 * int(tmp[1]), :]
         
-        return grad_input, grad_weight, grad_bias, None, None # TODO
+        d_r, d_c = grad_weight.size()
+        weight = torch.zeros(d_r, d_c * 2).to(input.device)
+        if int(tmp[0]) <= 256:
+            weight[:, :1 * int(tmp[1])] = grad_weight
+        else:
+            weight[:, 1 * int(tmp[1]):2 * int(tmp[1])] = grad_weight
+        
+        return grad_input, weight, grad_bias, None, None # TODO
 
 
 class FinalFunction(torch.autograd.Function):
@@ -550,15 +552,13 @@ class FinalFunction(torch.autograd.Function):
         grad_weight = torch.sum(grad_weight, 0) # TODO 
         # print(grad_weight)
         
-        # grad_weight_size = grad_weight.size(0)
-        # # print(weight.shape, grad_weight.size())
-        # weight = weight.t()
-        # if int(tmp[0]) <= 256:
-        #     weight[:1 * int(tmp[1]), :] = grad_weight ### TODO
-        # else:
-            
-        #     weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight[1 * int(tmp[1]):2 * int(tmp[1]), :]
-        return grad_input, grad_weight, grad_bias, None, None ## TODO
+        d_r, d_c = grad_weight.size()
+        weight = torch.zeros(d_r * 2, d_c).to(input.device)
+        if int(tmp[0]) <= 256:
+            weight[:1 * int(tmp[1]), :] = grad_weight
+        else:
+            weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight
+        return grad_input, weight, grad_bias, None, None ## TODO
 
 class AutoMHA(nn.Module):
     def __init__(self,
