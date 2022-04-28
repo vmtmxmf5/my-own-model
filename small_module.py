@@ -299,7 +299,7 @@ class embeddings(nn.Module):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.d_model, padding_idx=config.pad_token_id)
         self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.d_model)
-        self.token_type_embeddings = nn.Embedding(1, config.d_model)
+        self.token_type_embeddings = nn.Embedding(2, config.d_model)
         self.LayerNorm = nn.LayerNorm(config.d_model)
         self.dropout = nn.Dropout(config.dropout)
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
@@ -679,13 +679,13 @@ class AutoMHA(nn.Module):
 
         # stage = int(self.d_model
         if key_len < 256:
-            Q = self.Q(query, self.WQ_256, key_len, self.d_model, self.bQ_256)
-            K = self.K(key, self.WK_256, key_len, self.d_model, self.bK_256)
-            V = self.V(value, self.WV_256, key_len, self.d_model, self.bV_256)
+            Q = self.Q(query, self.WQ_256, self.bQ_256)
+            K = self.K(key, self.WK_256, self.bK_256)
+            V = self.V(value, self.WV_256, self.bV_256)
         else:
-            Q = self.Q(query, self.WQ_512, key_len, self.d_model, self.bQ_512)
-            K = self.K(key, self.WK_512, key_len, self.d_model, self.bK_512)
-            V = self.V(value, self.WV_512, key_len, self.d_model, self.bV_512)
+            Q = self.Q(query, self.WQ_512, self.bQ_512)
+            K = self.K(key, self.WK_512, self.bK_512)
+            V = self.V(value, self.WV_512, self.bV_512)
         
  
         Q, K, V = shape(Q), shape(K), shape(V)
@@ -711,9 +711,9 @@ class AutoMHA(nn.Module):
 
         context = unshape(context_original) # (B, q_len, d_model)
         if key_len < 256:
-            output = self.O(context, self.WO_256, key_len, self.d_model, self.bO_256) # (B, q_len, d_model)
+            output = self.O(context, self.WO_256, self.bO_256) # (B, q_len, d_model)
         else:
-            output = self.O(context, self.WO_512, key_len, self.d_model, self.bO_512) # (B, q_len, d_model)
+            output = self.O(context, self.WO_512, self.bO_512) # (B, q_len, d_model)
         # print(output.shape)
         output = self.LayerNorm(output)
         
