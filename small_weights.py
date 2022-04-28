@@ -43,17 +43,17 @@ for i in range(4):
     
     weights[f'encoder.layer.{i}.attention.WQ.weight'] = torch.cat((weights[f'encoder.layer.{i}.attention.self.query.weight'], weights[f'encoder.layer.{i}.attention.self.query.weight']), 1)
     weights.pop(f'encoder.layer.{i}.attention.self.query.weight')
-    weights[f'encoder.layer.{i}.attention.bQ.bias'] = weights.pop(f'encoder.layer.{i}.attention.self.query.bias')
+    weights[f'encoder.layer.{i}.attention.bQ.weight'] = weights.pop(f'encoder.layer.{i}.attention.self.query.bias')
     weights[f'encoder.layer.{i}.attention.WK.weight'] = torch.cat((weights[f'encoder.layer.{i}.attention.self.key.weight'], weights[f'encoder.layer.{i}.attention.self.key.weight']), 1)
     weights.pop(f'encoder.layer.{i}.attention.self.key.weight')
-    weights[f'encoder.layer.{i}.attention.bK.bias'] = weights.pop(f'encoder.layer.{i}.attention.self.key.bias')
+    weights[f'encoder.layer.{i}.attention.bK.weight'] = weights.pop(f'encoder.layer.{i}.attention.self.key.bias')
     weights[f'encoder.layer.{i}.attention.WV.weight'] = torch.cat((weights[f'encoder.layer.{i}.attention.self.value.weight'], weights[f'encoder.layer.{i}.attention.self.value.weight']), 1)
     weights.pop(f'encoder.layer.{i}.attention.self.value.weight')
-    weights[f'encoder.layer.{i}.attention.bV.bias'] = weights.pop(f'encoder.layer.{i}.attention.self.value.bias')
+    weights[f'encoder.layer.{i}.attention.bV.weight'] = weights.pop(f'encoder.layer.{i}.attention.self.value.bias')
     
     weights[f'encoder.layer.{i}.attention.WO.weight'] = torch.cat((weights[f'encoder.layer.{i}.attention.output.dense.weight'], weights[f'encoder.layer.{i}.attention.output.dense.weight']), 0)
     weights.pop(f'encoder.layer.{i}.attention.output.dense.weight')
-    weights[f'encoder.layer.{i}.attention.bO.bias'] = weights.pop(f'encoder.layer.{i}.attention.output.dense.bias')
+    weights[f'encoder.layer.{i}.attention.bO.weight'] = weights.pop(f'encoder.layer.{i}.attention.output.dense.bias')
     weights[f'encoder.layer.{i}.attention.LayerNorm.weight'] = weights.pop(f'encoder.layer.{i}.attention.output.LayerNorm.weight')
     weights[f'encoder.layer.{i}.attention.LayerNorm.bias'] = weights.pop(f'encoder.layer.{i}.attention.output.LayerNorm.bias')
 
