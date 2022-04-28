@@ -299,7 +299,7 @@ class embeddings(nn.Module):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.d_model, padding_idx=config.pad_token_id)
         self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.d_model)
-        self.token_type_embeddings = nn.Embedding(1, config.d_model)
+        self.token_type_embeddings = nn.Embedding(2, config.d_model)
         self.LayerNorm = nn.LayerNorm(config.d_model)
         self.dropout = nn.Dropout(config.dropout)
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
