@@ -622,11 +622,11 @@ class AutoMHA(nn.Module):
                 final_weight = self.shared_final_weight[:(start + 1) * stage, :]
                 final_bias = self.shared_final_bias[:(start + 1) * stage]
 
-        stage = int(self.d_model / 2)
+#         stage = int(self.d_model / 2)
         
-        Q = self.Q(query, self.WQ, key_len, stage, self.bQ)
-        K = self.K(key, self.WK, key_len, stage, self.bK)
-        V = self.V(value, self.WV, key_len, stage, self.bV)
+        Q = self.Q(query, self.WQ, key_len, self.d_model, self.bQ)
+        K = self.K(key, self.WK, key_len, self.d_model, self.bK)
+        V = self.V(value, self.WV, key_len, self.d_model, self.bV)
         
         # Q : (B, nhead, query_len, head_dim)
         if key_len <= 256:  ### TODO
@@ -655,7 +655,7 @@ class AutoMHA(nn.Module):
         # (B, nhead, query_len, head_dim)
 
         context = unshape(context_original, nhead) # (B, q_len, d_model)
-        output = self.O(context, self.WO, key_len, stage, self.bO) # (B, q_len, d_model)
+        output = self.O(context, self.WO, key_len, self.d_model, self.bO) # (B, q_len, d_model)
         # print(output.shape)
         output = self.LayerNorm(output)
         
