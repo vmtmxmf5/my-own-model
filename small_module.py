@@ -501,7 +501,7 @@ class LinearFunction(torch.autograd.Function):
         # else:
         #     weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight[1 * int(tmp[1]):2 * int(tmp[1]), :]
         
-        return grad_input, grad_weight, grad_bias, None # TODO
+        return grad_input, grad_weight, grad_bias, None, None # TODO
 
 
 class FinalFunction(torch.autograd.Function):
@@ -547,7 +547,7 @@ class FinalFunction(torch.autograd.Function):
             grad_weight = grad_output.permute(0, 2, 1).matmul(input)
         if bias is not None and ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(0)
-        grad_weight = torch.sum(grad_weight, 0).t() # TODO 
+        grad_weight = torch.sum(grad_weight, 0) # TODO 
         # print(grad_weight)
         
         # grad_weight_size = grad_weight.size(0)
@@ -558,7 +558,7 @@ class FinalFunction(torch.autograd.Function):
         # else:
             
         #     weight[1 * int(tmp[1]):2 * int(tmp[1]), :] = grad_weight[1 * int(tmp[1]):2 * int(tmp[1]), :]
-        return grad_input, grad_weight, grad_bias, None ## TODO
+        return grad_input, grad_weight, grad_bias, None, None ## TODO
 
 class AutoMHA(nn.Module):
     def __init__(self,
