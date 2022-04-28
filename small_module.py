@@ -323,9 +323,6 @@ class embeddings(nn.Module):
 #                 position_ids = create_position_ids_from_input_ids(input_ids, self.padding_idx, past_key_values_length)
 #             else:
 #                 position_ids = self.create_position_ids_from_inputs_embeds(inputs_embeds)
-        ### 수정
-        if position_ids is None:
-            position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
 
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -333,6 +330,9 @@ class embeddings(nn.Module):
             input_shape = inputs_embeds.size()[:-1]
 
         seq_length = input_shape[1]
+        ### 수정
+        if position_ids is None:
+            position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
         
         ### 수정
         if token_type_ids is None:
