@@ -674,9 +674,9 @@ class AutoMHA(nn.Module):
             # output : (B, seq_len, d_model)
             return x.transpose(1, 2).contiguous().view(B, -1, self.nhead * self.head_dim)
 
-        Q = self.Q(query)
-        K = self.K(key)
-        V = self.V(value)
+        Q = self.Q(query, key_len)
+        K = self.K(key, key_len)
+        V = self.V(value, key_len)
         
         Q, K, V = shape(Q), shape(K), shape(V)
         
@@ -701,7 +701,7 @@ class AutoMHA(nn.Module):
 
         context = unshape(context_original) # (B, q_len, d_model)
 
-        output = self.O(context)
+        output = self.O(context, key_len)
         # print(output.shape)
         output = self.LayerNorm(output)
         # attns = attn.view(B, self.nhead, query_len, key_len)
