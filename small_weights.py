@@ -41,23 +41,26 @@ for i in range(4):
     #     weight_idx = torch.argsort(weights[f'encoder.layer.{i-1}.intermediate.LayerNorm.weight'], descending=True)
     #     bias_idx = torch.argsort(weights[f'encoder.layer.{i-1}.intermediate.LayerNorm.bias'], descending=True)
     
-    weights[f'encoder.layer.{i}.attention.WQ_256.weight'] = weights.pop(f'encoder.layer.{i}.attention.self.query.weight')
-    weights[f'encoder.layer.{i}.attention.WQ_512.weight'] = weights[f'encoder.layer.{i}.attention.WQ_256.weight']
-    weights[f'encoder.layer.{i}.attention.bQ_256.weight'] = weights.pop(f'encoder.layer.{i}.attention.self.query.bias')
-    weights[f'encoder.layer.{i}.attention.bQ_512.weight'] = weights[f'encoder.layer.{i}.attention.bQ_256.weight']
-    weights[f'encoder.layer.{i}.attention.WK_256.weight'] = weights.pop(f'encoder.layer.{i}.attention.self.key.weight')
-    weights[f'encoder.layer.{i}.attention.WK_512.weight'] = weights[f'encoder.layer.{i}.attention.WK_256.weight']
-    weights[f'encoder.layer.{i}.attention.bK_256.weight'] = weights.pop(f'encoder.layer.{i}.attention.self.key.bias')
-    weights[f'encoder.layer.{i}.attention.bK_512.weight'] = weights[f'encoder.layer.{i}.attention.bK_256.weight']
-    weights[f'encoder.layer.{i}.attention.WV_256.weight'] = weights.pop(f'encoder.layer.{i}.attention.self.value.weight')
-    weights[f'encoder.layer.{i}.attention.WV_512.weight'] = weights[f'encoder.layer.{i}.attention.WV_256.weight']
-    weights[f'encoder.layer.{i}.attention.bV_256.weight'] = weights.pop(f'encoder.layer.{i}.attention.self.value.bias')
-    weights[f'encoder.layer.{i}.attention.bV_512.weight'] = weights[f'encoder.layer.{i}.attention.bV_256.weight']
+    weights[f'encoder.layer.{i}.attention.Q.weight_s1'] = weights.pop(f'encoder.layer.{i}.attention.self.query.weight')
+    weights[f'encoder.layer.{i}.attention.Q.weight_s2'] = weights[f'encoder.layer.{i}.attention.Q.weight_s1']
+    weights[f'encoder.layer.{i}.attention.Q.bias_s1'] = weights.pop(f'encoder.layer.{i}.attention.self.query.bias')
+    weights[f'encoder.layer.{i}.attention.Q.bias_s2'] = weights[f'encoder.layer.{i}.attention.Q.bias_s1']
+    
+    weights[f'encoder.layer.{i}.attention.K.weight_s1'] = weights.pop(f'encoder.layer.{i}.attention.self.key.weight')
+    weights[f'encoder.layer.{i}.attention.K.weight_s2'] = weights[f'encoder.layer.{i}.attention.K.weight_s1']
+    weights[f'encoder.layer.{i}.attention.K.bias_s1'] = weights.pop(f'encoder.layer.{i}.attention.self.key.bias')
+    weights[f'encoder.layer.{i}.attention.K.bias_s2'] = weights[f'encoder.layer.{i}.attention.K.bias_s1']
+    
+    weights[f'encoder.layer.{i}.attention.V.weight_s1'] = weights.pop(f'encoder.layer.{i}.attention.self.value.weight')
+    weights[f'encoder.layer.{i}.attention.V.weight_s2'] = weights[f'encoder.layer.{i}.attention.V.weight_s1']
+    weights[f'encoder.layer.{i}.attention.V.bias_s1'] = weights.pop(f'encoder.layer.{i}.attention.self.value.bias')
+    weights[f'encoder.layer.{i}.attention.V.bias_s2'] = weights[f'encoder.layer.{i}.attention.V.bias_s1']
 
-    weights[f'encoder.layer.{i}.attention.WO_256.weight'] = weights.pop(f'encoder.layer.{i}.attention.output.dense.weight')
-    weights[f'encoder.layer.{i}.attention.WO_512.weight'] = weights[f'encoder.layer.{i}.attention.WO_256.weight']
-    weights[f'encoder.layer.{i}.attention.bO_256.weight'] = weights.pop(f'encoder.layer.{i}.attention.output.dense.bias')
-    weights[f'encoder.layer.{i}.attention.bO_512.weight'] = weights[f'encoder.layer.{i}.attention.bO_256.weight']
+    weights[f'encoder.layer.{i}.attention.O.weight_s1'] = weights.pop(f'encoder.layer.{i}.attention.output.dense.weight')
+    weights[f'encoder.layer.{i}.attention.O.weight_s2'] = weights[f'encoder.layer.{i}.attention.O.weight_s1']
+    weights[f'encoder.layer.{i}.attention.O.bias_s1'] = weights.pop(f'encoder.layer.{i}.attention.output.dense.bias')
+    weights[f'encoder.layer.{i}.attention.O.bias_s2'] = weights[f'encoder.layer.{i}.attention.O.bias_s1']
+
     weights[f'encoder.layer.{i}.attention.LayerNorm.weight'] = weights.pop(f'encoder.layer.{i}.attention.output.LayerNorm.weight')
     weights[f'encoder.layer.{i}.attention.LayerNorm.bias'] = weights.pop(f'encoder.layer.{i}.attention.output.LayerNorm.bias')
 
