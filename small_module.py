@@ -618,8 +618,8 @@ class Rinear(nn.Module):
         self.weight_s1 = nn.Parameter(torch.Tensor(out_feature, in_feature))
         self.weight_s2 = nn.Parameter(torch.Tensor(out_feature, in_feature))
         if bias:
-            self.bias_s1 = nn.parameter(torch.Tensor(out_feature))
-            self.bias_s2 = nn.parameter(torch.Tensor(out_feature))
+            self.bias_s1 = nn.Parameter(torch.Tensor(out_feature))
+            self.bias_s2 = nn.Parameter(torch.Tensor(out_feature))
     def forward(self, input, time_steps):
         if time_steps < 256:
             res = LinearFunction(input, self.weight_s1, self.bias_s1)
