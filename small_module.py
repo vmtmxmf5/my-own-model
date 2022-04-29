@@ -308,24 +308,24 @@ class embeddings(nn.Module):
         self.padding_idx = config.pad_token_id
         
         ### 수정
-        if version.parse(torch.__version__) > version.parse("1.6.0"):
-            self.register_buffer(
-                "token_type_ids",
-                torch.zeros(self.position_ids.size(), dtype=torch.long),
-                persistent=False,
-            )
+#         if version.parse(torch.__version__) > version.parse("1.6.0"):
+#             self.register_buffer(
+#                 "token_type_ids",
+#                 torch.zeros(self.position_ids.size(), dtype=torch.long),
+#                 persistent=False,
+#             )
         ### 수정
 
     def forward(
         self, input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None, past_key_values_length=0
     ):
         ## input_ids : (B, T)
-#         if position_ids is None:
-#             if input_ids is not None:
-#                 # Create the position ids from the input token ids. Any padded tokens remain padded.
-#                 position_ids = create_position_ids_from_input_ids(input_ids, self.padding_idx, past_key_values_length)
-#             else:
-#                 position_ids = self.create_position_ids_from_inputs_embeds(inputs_embeds)
+        if position_ids is None:
+            if input_ids is not None:
+                # Create the position ids from the input token ids. Any padded tokens remain padded.
+                position_ids = create_position_ids_from_input_ids(input_ids, self.padding_idx, past_key_values_length)
+            else:
+                position_ids = self.create_position_ids_from_inputs_embeds(inputs_embeds)
 
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -334,25 +334,25 @@ class embeddings(nn.Module):
 
         seq_length = input_shape[1]
         ### 수정
-        if position_ids is None:
-            position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
+#         if position_ids is None:
+#             position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
         
         ### 수정
-        if token_type_ids is None:
-            if hasattr(self, "token_type_ids"):
-                buffered_token_type_ids = self.token_type_ids[:, :seq_length]
-                buffered_token_type_ids_expanded = buffered_token_type_ids.expand(input_shape[0], seq_length)
-                token_type_ids = buffered_token_type_ids_expanded
-            else:
-                token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.position_ids.device)
+#         if token_type_ids is None:
+#             if hasattr(self, "token_type_ids"):
+#                 buffered_token_type_ids = self.token_type_ids[:, :seq_length]
+#                 buffered_token_type_ids_expanded = buffered_token_type_ids.expand(input_shape[0], seq_length)
+#                 token_type_ids = buffered_token_type_ids_expanded
+#             else:
+#                 token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.position_ids.device)
         ### 수정
         
         if inputs_embeds is None:
             inputs_embeds = self.word_embeddings(input_ids)
         
         ### 수정
-        token_type_embeddings = self.token_type_embeddings(token_type_ids) # 삭제
-        embeddings = inputs_embeds + token_type_embeddings # 앞 부분만 살려
+        # token_type_embeddings = self.token_type_embeddings(token_type_ids) # 삭제
+        embeddings = inputs_embeds # + token_type_embeddings # 앞 부분만 살려
         ### 수정
         if self.position_embedding_type == "absolute":
             position_embeddings = self.position_embeddings(position_ids)
@@ -603,33 +603,29 @@ class LinearFunction(torch.autograd.Function):
             grad_input = grad_output.matmul(weight)
         if ctx.needs_input_grad[1]:
             grad_weight = grad_output.permute(0,2,1).matmul(input)
+            grad_weight = torch.sum(grad_weight, 0)
         if bias is not None and ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(0)
-
+        
         return grad_input, grad_weight, grad_bias
 
-class FinalFunction(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, input, weight, bias=None):
-        ctx.save_for_backward(input, weight, bias)
-        output = input.matmul(weight.t())
-        if bias is not None:
-            output += bias.unsqueeze(0).expand_as(output)
-        return output
+class Rinear(nn.Module):
+    def __init__(self, in_feature, out_feature, bias=True):
+        super().__init__()
+        self.in_feature = in_feature
+        self.out_feature = out_feature
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        input, weight, bias = ctx.saved_tensors
-        grad_input = grad_weight = grad_bias = None
-
-        if ctx.needs_input_grad[0]:
-            grad_input = grad_output.matmul(weight)
-        if ctx.needs_input_grad[1]:
-            grad_weight = grad_output.permute(0,2,1).matmul(input)
-        if bias is not None and ctx.needs_input_grad[2]:
-            grad_bias = grad_output.sum(0)
-
-        return grad_input, grad_weight, grad_bias
+        self.weight_s1 = nn.Parameter(torch.Tensor(out_feature, in_feature))
+        self.weight_s2 = nn.Parameter(torch.Tensor(out_feature, in_feature))
+        if bias:
+            self.bias_s1 = nn.parameter(torch.Tensor(out_feature))
+            self.bias_s2 = nn.parameter(torch.Tensor(out_feature))
+    def forward(self, input, time_steps):
+        if time_steps < 256:
+            res = LinearFunction(input, self.weight_s1, self.bias_s1)
+        else:
+            res = LinearFunction(input, self.weight_s2, self.bias_s2)
+        return res
 
 
 class AutoMHA(nn.Module):
@@ -647,33 +643,15 @@ class AutoMHA(nn.Module):
         self.nhead = nhead
 
         # nn.parameter를 사용하면 weight을 backward에 쓰겠다는 의미
-        self.WQ_256 = nn.Parameter(torch.randn(d_model, d_model))
-        self.bQ_256 = nn.Parameter(torch.randn(d_model))
-        self.WK_256 = nn.Parameter(torch.randn(d_model, d_model))
-        self.bK_256 = nn.Parameter(torch.randn(d_model))
-        self.WV_256 = nn.Parameter(torch.randn(d_model, d_model))
-        self.bV_256 = nn.Parameter(torch.randn(d_model))
-
-        self.WQ_512 = nn.Parameter(torch.randn(d_model, d_model))
-        self.bQ_512 = nn.Parameter(torch.randn(d_model))
-        self.WK_512 = nn.Parameter(torch.randn(d_model, d_model))
-        self.bK_512 = nn.Parameter(torch.randn(d_model))
-        self.WV_512 = nn.Parameter(torch.randn(d_model, d_model))
-        self.bV_512 = nn.Parameter(torch.randn(d_model))
-        self.K = LinearFunction.apply
-        self.V = LinearFunction.apply
-        self.Q = LinearFunction.apply
+        self.Q = Rinear(d_model, d_model)
+        self.K = Rinear(d_model, d_model)
+        self.V = Rinear(d_model, d_model)
 
         self.softmax = nn.Softmax(dim=-1)
         self.dropout = nn.Dropout(dropout)
         
-        self.WO_256 = nn.Parameter(torch.randn(d_model, d_model)) ### TODO
-        self.bO_256 = nn.Parameter(torch.randn(d_model))
-        self.WO_512 = nn.Parameter(torch.randn(d_model, d_model)) ### TODO
-        self.bO_512 = nn.Parameter(torch.randn(d_model))
-        self.O = FinalFunction.apply
-
-        self.LayerNorm = nn.LayerNorm(d_model, eps=1e-12)
+        self.O = Rinear(d_model, d_model)
+        self.LayerNorm = nn.LayerNorm(d_model, eps=1e-6)
 
     def forward(self, query, key, value, mask=None, attn_type=None):
         # query : (B, query_len, d_model) // FloatTensor
@@ -696,23 +674,10 @@ class AutoMHA(nn.Module):
             # output : (B, seq_len, d_model)
             return x.transpose(1, 2).contiguous().view(B, -1, self.nhead * self.head_dim)
 
-
-        def replace_outputs(final_weight, final_bias, start=0, stage=None):
-            with torch.no_grad():
-                final_weight = self.shared_final_weight[:(start + 1) * stage, :]
-                final_bias = self.shared_final_bias[:(start + 1) * stage]
-
-        # stage = int(self.d_model
-        if key_len < 256:
-            Q = self.Q(query, self.WQ_256, self.bQ_256)
-            K = self.K(key, self.WK_256, self.bK_256)
-            V = self.V(value, self.WV_256, self.bV_256)
-        else:
-            Q = self.Q(query, self.WQ_512, self.bQ_512)
-            K = self.K(key, self.WK_512, self.bK_512)
-            V = self.V(value, self.WV_512, self.bV_512)
+        Q = self.Q(query)
+        K = self.K(key)
+        V = self.V(value)
         
- 
         Q, K, V = shape(Q), shape(K), shape(V)
         
         ## 2) Calculate scores
@@ -735,13 +700,10 @@ class AutoMHA(nn.Module):
         # (B, nhead, query_len, head_dim)
 
         context = unshape(context_original) # (B, q_len, d_model)
-        if key_len < 256:
-            output = self.O(context, self.WO_256, self.bO_256) # (B, q_len, d_model)
-        else:
-            output = self.O(context, self.WO_512, self.bO_512) # (B, q_len, d_model)
+
+        output = self.O(context)
         # print(output.shape)
         output = self.LayerNorm(output)
-        
         # attns = attn.view(B, self.nhead, query_len, key_len)
         return output #, attns
     
