@@ -14,4 +14,4 @@ CUDA_VISIBLE_DEVICES=1 python main.py -layer=4 -head=8 --d_model=512 -ff=2048 -p
 
 
 ## baseline
-CUDA_VISIBLE_DEVICES=1 python main.py -pad=0 -vocab=30522 --dataset=sst2 -B=64 --num_workers=8 --device=cuda --epochs=50 --lr=2e-5
+CUDA_VISIBLE_DEVICES=1 python longformer.py -pad=0 -vocab=30522 --dataset=sst2 -B=64 --num_workers=8 --device=cuda --epochs=50 --lr=2e-5
