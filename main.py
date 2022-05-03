@@ -34,7 +34,7 @@ def collate_fn(batch):
     max_512 = max(lengths)
 
     ids_res_256, ids_res_512, over_512_len = [], [], []
-    for i, line, lens in enumerate(zip(lines, lengths)):
+    for i, (line, lens) in enumerate(zip(lines, lengths)):
         len_ids = max_len - lens
         len_512 = max_512 - lens
        # if len_ids != 0:
@@ -55,6 +55,7 @@ def collate_fn(batch):
         #     over_512_len.append(i)
         # label_res.append(torch.LongTensor([label]))
     ids_batch_256 = torch.cat(ids_res_256, dim=0)
+    ids_batch_512 = torch.LongTensor([])
     if ids_res_512 != []:
         ids_batch_512 = torch.cat(ids_res_512, dim=0)
     else:
