@@ -252,8 +252,8 @@ if __name__=='__main__':
         wandb.log({'train_loss':train_loss, 'train_acc':train_acc}) #TODO
 
         short_ppl, short_acc, long_ppl, long_acc = evaluate(model, valid_dl, criterion, config)
-        wandb.log({'s1_ppl':short_ppl, 's1_acc':short_acc}) #TODO
-        wandb.log({'s2_ppl':long_ppl, 's2_acc':long_acc})
+        wandb.log({'s1_ppl':torch.exp(short_ppl), 's1_acc':short_acc}) #TODO
+        wandb.log({'s2_ppl':torch.exp(long_ppl), 's2_acc':long_acc})
         if short_ppl < best_valid_loss:
             save(os.path.join('checkpoint', f'model_{epoch+1:03d}.pt'), model, optimizer)
             best_valid_loss = short_ppl
