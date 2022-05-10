@@ -283,7 +283,7 @@ class MultiHeadedAttention(nn.Module):
             .view(batch_size, head_count,
                   query_len, key_len)
 
-        return output, attns
+        return output
 
     def update_dropout(self, dropout):
         self.dropout.p = dropout
@@ -431,6 +431,7 @@ class TransformerEncoderLayer(nn.Module):
         self.attention = MultiHeadedAttention(heads, d_model, dropout, max_relative_positions=0) ### shared weights 쓰고 싶으면 MHA로 변경할것
         self.intermediate = PositionwiseFeedForward(d_model, d_ff, dropout,
                                                     pos_ffn_activation_fn)
+        self.dropout = nn.Dropout(dropout)
         # self.LayerNorm = nn.LayerNorm(d_model, eps=1e-6)
         
     def forward(self, inputs, mask):
